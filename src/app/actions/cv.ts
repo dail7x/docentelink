@@ -31,6 +31,17 @@ export async function saveResumeAction(formData: any) {
     throw new Error("El slug ya está en uso. Por favor elige otro.");
   }
 
+  // Cálculo de Completion Score (0-100) básicos
+  let score = 0;
+  if (formData.nombre) score += 10;
+  if (formData.email) score += 10;
+  if (formData.telefono) score += 10;
+  if (formData.tituloHabilitante) score += 20;
+  if (formData.provincia) score += 10;
+  if (formData.localidad) score += 10;
+  if (formData.experiencia && formData.experiencia.length > 0) score += 15;
+  if (formData.formacion && formData.formacion.length > 0) score += 15;
+
   // Preparamos el JsonResume
   const jsonResume = {
     basics: {
@@ -54,7 +65,7 @@ export async function saveResumeAction(formData: any) {
         provincia: formData.provincia,
         localidad: formData.localidad,
         disponibilidad: formData.disponibilidad,
-        completionScore: 100, // Placeholder
+        completionScore: score,
         isVerified: false,
         parsedFromPdf: formData.parsedFromPdf || false,
       }
@@ -70,10 +81,11 @@ export async function saveResumeAction(formData: any) {
           username: formData.slug,
           title: formData.tituloHabilitante,
           jsonResume: jsonResume,
+          completionScore: score,
           updatedAt: new Date(),
         })
         .where(eq(resumes.id, resumeId));
-      console.log("Resume updated successfully:", resumeId);
+      console.log("Resume updated successfully:", resumeId, "Score:", score);
     } else {
       await db.insert(resumes).values({
         id: resumeId,
@@ -81,10 +93,11 @@ export async function saveResumeAction(formData: any) {
         username: formData.slug,
         title: formData.tituloHabilitante,
         jsonResume: jsonResume,
+        completionScore: score,
         isPublic: true,
         parsedFromPdf: formData.parsedFromPdf || false,
       });
-      console.log("Resume inserted successfully:", resumeId);
+      console.log("Resume inserted successfully:", resumeId, "Score:", score);
     }
   } catch (dbError: any) {
     console.error("DETALLE ERROR DB:", dbError);
