@@ -63,25 +63,34 @@ export async function saveResumeAction(formData: any) {
 
   const resumeId = userResume?.id || uuidv4();
 
-  if (userResume) {
-    await db.update(resumes)
-      .set({
+  try {
+    if (userResume) {
+      await db.update(resumes)
+        .set({
+          username: formData.slug,
+          title: formData.tituloHabilitante,
+          jsonResume: jsonResume,
+          updatedAt: new Date(),
+        })
+        .where(eq(resumes.id, resumeId));
+      console.log("Resume updated successfully:", resumeId);
+    } else {
+      await db.insert(resumes).values({
+        id: resumeId,
+        userId: session.userId,
         username: formData.slug,
         title: formData.tituloHabilitante,
         jsonResume: jsonResume,
-        updatedAt: new Date(),
-      })
-      .where(eq(resumes.id, resumeId));
-  } else {
-    await db.insert(resumes).values({
-      id: resumeId,
-      userId: session.userId,
-      username: formData.slug,
-      title: formData.tituloHabilitante,
-      jsonResume: jsonResume,
-      isPublic: true,
-      parsedFromPdf: formData.parsedFromPdf || false,
-    });
+        isPublic: true,
+        parsedFromPdf: formData.parsedFromPdf || false,
+      });
+      console.log("Resume inserted successfully:", resumeId);
+    }
+  } catch (dbError: any) {
+    console.error("DETALLE ERROR DB:", dbError);
+    // Extraer mensaje amigable si es posible
+    const msg = dbError.message || "Error desconocido en la base de datos";
+    throw new Error(msg);
   }
 
   redirect(`/dashboard?status=success`);
