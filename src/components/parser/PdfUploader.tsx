@@ -14,6 +14,8 @@ interface PdfUploaderProps {
 export const PdfUploader = ({ onDataParsed, className }: PdfUploaderProps) => {
   const [status, setStatus] = useState<'idle' | 'extracting' | 'parsing' | 'done' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
+
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -41,7 +43,10 @@ export const PdfUploader = ({ onDataParsed, className }: PdfUploaderProps) => {
 
       const result = await response.json();
 
-      if (result.success) {
+        if (result.success) {
+        if (result.data.es_cv_docente === false) {
+          setWarning(result.data.observaciones || "Este CV no parece de perfil docente o educativo. ¿Querés continuar usando los datos extraídos de todas formas?");
+        }
         setStatus('done');
         onDataParsed(result.data);
       } else {
@@ -61,7 +66,8 @@ export const PdfUploader = ({ onDataParsed, className }: PdfUploaderProps) => {
         "relative rounded-[2rem] border-4 border-dashed p-12 transition-all duration-300 flex flex-col items-center justify-center text-center space-y-4",
         status === 'idle' && "border-dl-primary-light bg-white hover:border-dl-primary/50",
         (status === 'extracting' || status === 'parsing') && "border-dl-primary-mid bg-dl-primary-bg/50 animate-pulse",
-        status === 'done' && "border-dl-accent bg-dl-accent-light",
+        status === 'done' && !warning && "border-dl-accent bg-dl-accent-light",
+        status === 'done' && warning && "border-yellow-400 bg-yellow-50",
         status === 'error' && "border-red-200 bg-red-50"
       )}>
         
@@ -98,12 +104,23 @@ export const PdfUploader = ({ onDataParsed, className }: PdfUploaderProps) => {
           </>
         )}
 
-        {status === 'done' && (
+        {status === 'done' && !warning && (
           <>
             <CheckCircle2 className="w-16 h-16 text-dl-accent" />
             <div className="space-y-1">
               <p className="text-xl font-bold text-dl-primary-dark tracking-tight">¡Lectura completa!</p>
-              <p className="text-dl-muted font-medium italic">Gemini 2.0 Flash terminó de extraer tus datos.</p>
+              <p className="text-dl-muted font-medium italic">Terminamos de extraer tus datos.</p>
+            </div>
+          </>
+        )}
+
+        {status === 'done' && warning && (
+          <>
+            <AlertCircle className="w-16 h-16 text-yellow-500" />
+            <div className="space-y-1 px-4">
+              <p className="text-xl font-bold text-yellow-800 tracking-tight">Aviso de la IA</p>
+              <p className="text-yellow-700/90 font-medium text-sm mt-2">{warning}</p>
+              <p className="text-yellow-600 font-bold text-xs mt-4">Podés continuar de todas formas.</p>
             </div>
           </>
         )}
@@ -122,7 +139,7 @@ export const PdfUploader = ({ onDataParsed, className }: PdfUploaderProps) => {
 
       {status === 'done' && (
         <div className="flex justify-center">
-           <Button variant="accent" size="lg" className="px-10 font-black animate-in fade-in slide-in-from-bottom-2">
+           <Button variant={warning ? "outline" : "accent"} size="lg" className="px-10 font-black animate-in fade-in slide-in-from-bottom-2">
               Continuar al Wizard
            </Button>
         </div>

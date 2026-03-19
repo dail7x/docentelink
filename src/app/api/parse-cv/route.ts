@@ -3,13 +3,14 @@ import { z } from 'zod'
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 const model = genAI.getGenerativeModel({
-  model: 'gemini-1.5-flash-latest',
-  generationConfig: { responseMimeType: 'application/json' },
+  model: 'gemini-2.5-flash',
 })
 
 const ParsedCVSchema = z.object({
+  es_cv_docente:     z.boolean().optional().nullable().default(true),
+  observaciones:     z.string().optional().nullable(),
   nombre:            z.string().optional().nullable(),
-  email:             z.string().optional().nullable(), // Quitamos .email() por si el formato es dudoso
+  email:             z.string().optional().nullable(),
   telefono:          z.string().optional().nullable(),
   tituloHabilitante: z.string().optional().nullable(),
   experiencia: z.array(z.object({
@@ -27,8 +28,9 @@ const ParsedCVSchema = z.object({
 })
 
 const PROMPT = `Sos un asistente especializado en CVs de docentes argentinos.
-Extraé los datos del siguiente texto y devolvé ÚNICAMENTE un JSON válido que siga la estructura solicitada.
-No inventes datos ausentes. Usá null u omití campos no encontrados.
+Analizá si el texto corresponde razonablemente a un perfil docente o relacionado a educación (campo "es_cv_docente"). Si es false, dejá un breve mensaje en "observaciones" explicando por qué.
+Aún así, extraé cualquier dato útil (nombre, email, experiencia, etc) que encuentres.
+Devolvé ÚNICAMENTE un JSON válido que siga la estructura solicitada. No inventes datos ausentes. Usá null u omití campos no encontrados.
 
 Texto del CV:\n`
 
@@ -50,12 +52,10 @@ export async function POST(req: Request) {
     const cleanJson = jsonMatch[0];
     
     try {
-      // Parseamos con Zod para asegurar la integridad de la respuesta
       const parsed = ParsedCVSchema.parse(JSON.parse(cleanJson))
       return Response.json({ data: parsed, success: true })
     } catch (parseError) {
       console.error("Error al parsear el JSON de Gemini:", parseError);
-      console.error("JSON fallido:", cleanJson);
       throw parseError;
     }
   } catch (error: any) {
