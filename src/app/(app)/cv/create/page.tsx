@@ -12,6 +12,7 @@ import { useSearchParams } from 'next/navigation';
 import { StepExperience } from '@/components/wizard/StepExperience';
 import { StepIdentity } from '@/components/wizard/StepIdentity';
 import { saveResumeAction } from '@/app/actions/cv';
+import { getResumeAction } from '@/app/actions/get-cv';
 import { Loader2 } from 'lucide-react';
 
 export default function CreateCvPage() {
@@ -21,11 +22,21 @@ export default function CreateCvPage() {
   const [parsedData, setParsedData] = useState<Record<string, any> | null>(null);
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(isEditMode);
 
   useEffect(() => {
-    if (isEditMode) {
-      setCurrentStep(1);
+    async function loadData() {
+      if (isEditMode) {
+        setIsLoading(true);
+        const existingData = await getResumeAction();
+        if (existingData) {
+          setFormData(existingData);
+          setCurrentStep(1);
+        }
+        setIsLoading(false);
+      }
     }
+    loadData();
   }, [isEditMode]);
 
   const handleDataParsed = (data: any) => {
@@ -57,7 +68,7 @@ export default function CreateCvPage() {
     }
   };
 
-  if (isSubmitting) {
+  if (isLoading || isSubmitting) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 space-y-8 animate-in fade-in duration-1000">
          <div className="relative">
@@ -65,8 +76,12 @@ export default function CreateCvPage() {
             <Sparkles className="absolute top-0 right-0 w-8 h-8 text-dl-primary animate-pulse" />
          </div>
          <div className="text-center space-y-2">
-            <h2 className="text-3xl font-black text-dl-primary-dark">Estamos publicando tu perfil...</h2>
-            <p className="text-dl-muted font-bold text-lg">Esto solo tomará un momento, profe.</p>
+            <h2 className="text-3xl font-black text-dl-primary-dark">
+               {isSubmitting ? "Estamos publicando tu perfil..." : "Cargando tus datos..."}
+            </h2>
+            <p className="text-dl-muted font-bold text-lg">
+               {isSubmitting ? "Esto solo tomará un momento, profe." : "Preparando tu CV para editar."}
+            </p>
          </div>
       </div>
     );
