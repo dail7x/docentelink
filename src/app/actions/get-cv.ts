@@ -33,5 +33,6 @@ export async function getResumeAction() {
     tipoEmpleo: meta.tipoEmpleo || [],
     experiencia: jr.work || [],
     formacion: jr.education || [],
+    imagen: jr.basics?.image || "",
   };
 }

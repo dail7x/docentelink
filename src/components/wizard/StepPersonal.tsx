@@ -52,7 +52,10 @@ export const StepPersonal = ({ initialData, onNext }: StepPersonalProps) => {
         
         {/* Lado Izquierdo: La Foto Editorial */}
         <div className="w-full md:w-auto flex-shrink-0">
-          <PhotoEditor onPhotoProcessed={handlePhotoProcessed} />
+          <PhotoEditor 
+            onPhotoProcessed={handlePhotoProcessed} 
+            initialImageUrl={initialData?.imagen}
+          />
         </div>
 
         {/* Lado Derecho: Los Campos */}
@@ -107,22 +110,24 @@ export const StepPersonal = ({ initialData, onNext }: StepPersonalProps) => {
               </div>
 
               {/* Campo Link Único (Slug) */}
-              <div className="space-y-3">
-                 <label className="text-xs font-black text-dl-primary-dark uppercase tracking-widest flex items-center gap-2">
-                    <AtSign className="w-4 h-4" />
-                    Tu Link Único (Slug)
-                 </label>
+              <div className="space-y-4">
+                 <div className="space-y-1">
+                    <label className="text-xs font-black text-dl-primary-dark uppercase tracking-widest flex items-center gap-2">
+                       <AtSign className="w-4 h-4" />
+                       Tu Link Único (Slug)
+                    </label>
+                    <p className="text-[10px] text-dl-muted font-bold uppercase tracking-widest pb-1 opacity-60">
+                       docentelink.ar/cv/<span className="text-dl-accent underline">{slug || "tu-nombre"}</span>
+                    </p>
+                 </div>
                  <div className="relative group">
-                    <span className="absolute left-6 top-1/2 -translate-y-1/2 text-dl-muted font-bold opacity-30">docentelink.ar/cv/</span>
                     <input 
                       {...register('slug')}
-                      className="w-full p-6 pl-40 text-xl font-bold bg-dl-accent-light rounded-3xl border-2 border-dl-accent/20 focus:border-dl-accent focus:ring-0 transition-all outline-none"
+                      className="w-full p-6 text-xl font-medium bg-dl-accent-light/30 rounded-3xl border-2 border-dl-accent/20 focus:border-dl-accent focus:ring-0 transition-all outline-none"
+                      placeholder="tu-identificador"
                     />
                     {errors.slug && <p className="text-red-500 text-xs font-bold pt-1">{errors.slug.message}</p>}
                  </div>
-                 <p className="text-[10px] text-dl-muted font-bold uppercase tracking-widest pt-2 italic">
-                    Este será tu identificador público profesional.
-                 </p>
               </div>
            </div>
 
