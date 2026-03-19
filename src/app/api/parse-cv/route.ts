@@ -3,25 +3,25 @@ import { z } from 'zod'
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 const model = genAI.getGenerativeModel({
-  model: 'gemini-2.0-flash',
+  model: 'gemini-1.5-flash',
   generationConfig: { responseMimeType: 'application/json' },
 })
 
 const ParsedCVSchema = z.object({
   nombre:            z.string().optional().nullable(),
-  email:             z.string().email().optional().nullable(),
+  email:             z.string().optional().nullable(), // Quitamos .email() por si el formato es dudoso
   telefono:          z.string().optional().nullable(),
   tituloHabilitante: z.string().optional().nullable(),
   experiencia: z.array(z.object({
-    institucion:  z.string(),
-    cargo:        z.string(),
+    institucion:  z.string().optional().nullable().default(""),
+    cargo:        z.string().optional().nullable().default(""),
     desde:        z.string().optional().nullable(),
     hasta:        z.string().optional().nullable(),
     descripcion:  z.string().optional().nullable(),
   })).default([]),
   formacion: z.array(z.object({
-    titulo:      z.string(),
-    institucion: z.string(),
+    titulo:      z.string().optional().nullable().default(""),
+    institucion: z.string().optional().nullable().default(""),
     anio:        z.string().optional().nullable(),
   })).default([]),
 })
@@ -36,23 +36,34 @@ export async function POST(req: Request) {
   try {
     const { text } = await req.json()
     
-    if (!text || text.length < 10) {
-      return Response.json({ success: false, message: 'Texto insuficiente para procesar.' })
-    }
-
     const result = await model.generateContent(PROMPT + text)
     const rawResponse = result.response.text();
+    console.log("Respuesta raw de Gemini:", rawResponse);
+
+    // Limpiamos la respuesta y extraemos lo que parece un JSON si hay basura alrededor
+    const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error("No se encontró JSON en la respuesta de Gemini");
+      throw new Error("Formato de respuesta inválido");
+    }
     
-    // Parseamos con Zod para asegurar la integridad de la respuesta
-    const parsed = ParsedCVSchema.parse(JSON.parse(rawResponse))
+    const cleanJson = jsonMatch[0];
     
-    return Response.json({ data: parsed, success: true })
-  } catch (error) {
+    try {
+      // Parseamos con Zod para asegurar la integridad de la respuesta
+      const parsed = ParsedCVSchema.parse(JSON.parse(cleanJson))
+      return Response.json({ data: parsed, success: true })
+    } catch (parseError) {
+      console.error("Error al parsear el JSON de Gemini:", parseError);
+      console.error("JSON fallido:", cleanJson);
+      throw parseError;
+    }
+  } catch (error: any) {
     console.error("Error en Gemini Parser:", error);
     return Response.json({ 
       data: {}, 
       success: false, 
-      message: 'No pudimos estructurar el CV. Por favor, completa el formulario manualmente.' 
+      message: `No pudimos estructurar el CV: ${error.message || 'Error desconocido'}. Por favor, completa el formulario manualmente.` 
     })
   }
 }
