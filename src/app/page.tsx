@@ -1,6 +1,3 @@
-import { Logo } from "@/components/brand/Logo";
-import { Button } from "@/components/ui/Button";
-import Link from "next/link";
 import Hero from "@/components/landing/Hero";
 import HowItWorks from "@/components/landing/HowItWorks";
 import Pricing from "@/components/landing/Pricing";
@@ -9,36 +6,7 @@ import Footer from "@/components/landing/Footer";
 export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen">
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b-2 border-dl-primary-light/40">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <Logo />
-          
-          <nav className="hidden md:flex items-center gap-10 text-sm font-bold text-dl-primary-dark tracking-wide uppercase tracking-widest">
-            <Link href="#como-funciona" className="hover:text-dl-accent transition-colors duration-200">
-              Cómo funciona
-            </Link>
-            <Link href="#planes" className="hover:text-dl-accent transition-colors duration-200">
-              Planes
-            </Link>
-            <Link href="#preguntas" className="hover:text-dl-accent transition-colors duration-200">
-              Preguntas
-            </Link>
-          </nav>
-
-          <div className="flex items-center gap-6">
-            <Link href="/login" className="hidden sm:block text-sm font-bold text-dl-primary-dark uppercase hover:text-dl-accent tracking-widest">
-              Ingresar
-            </Link>
-            <Link href="/cv/create">
-              <Button variant="primary" size="md" className="font-bold">
-                Empezar
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <main className="flex-1 pt-20">
+      <main className="flex-1">
         <Hero />
         <HowItWorks />
         
