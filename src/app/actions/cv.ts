@@ -3,7 +3,7 @@
 import { db } from "@/db";
 import { resumes, users } from "@/db/schema";
 import { auth } from "@clerk/nextjs/server";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { v4 as uuidv4 } from 'uuid';
 import { syncClerkUserWithDb } from "@/lib/user";
@@ -15,12 +15,19 @@ export async function saveResumeAction(formData: any) {
   // Asegurar que el usuario existe en Turso antes de guardar CV (FK constraint user_id)
   await syncClerkUserWithDb();
 
-  // El username/slug debe ser único. Implementaremos validación aquí.
-  const existingResume = await db.query.resumes.findFirst({
-    where: eq(resumes.username, formData.slug),
+  // Buscar si el usuario ya tiene un CV guardado, y también chequear si alguien más tiene el slug
+  const existingRecords = await db.query.resumes.findMany({
+    where: or(
+      eq(resumes.userId, session.userId),
+      eq(resumes.username, formData.slug)
+    ),
   });
 
-  if (existingResume && existingResume.userId !== session.userId) {
+  const userResume = existingRecords.find(r => r.userId === session.userId);
+  const slugTakenBySomeoneElse = existingRecords.find(r => r.username === formData.slug && r.userId !== session.userId);
+
+  if (slugTakenBySomeoneElse) {
+    console.error(`Error: slug ${formData.slug} está ocupado por otro userId`);
     throw new Error("El slug ya está en uso. Por favor elige otro.");
   }
 
@@ -54,9 +61,9 @@ export async function saveResumeAction(formData: any) {
     }
   };
 
-  const resumeId = existingResume?.id || uuidv4();
+  const resumeId = userResume?.id || uuidv4();
 
-  if (existingResume) {
+  if (userResume) {
     await db.update(resumes)
       .set({
         username: formData.slug,
