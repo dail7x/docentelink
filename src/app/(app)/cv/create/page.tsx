@@ -35,10 +35,12 @@ export default function CreateCvPage() {
       setIsSubmitting(true);
       const fullData = { ...formData, ...finalData, parsedFromPdf: !!parsedData };
       await saveResumeAction(fullData);
-    } catch (error) {
+      return true; // Exito
+    } catch (error: any) {
        console.error("Error al guardar:", error);
-       alert("Hubo un error al guardar tu CV. Intenta cambiar el slug.");
+       alert(`Hubo un error al guardar tu CV: ${error.message || 'Intenta cambiar el slug'}`);
        setIsSubmitting(false);
+       return false;
     }
   };
 
