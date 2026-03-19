@@ -27,10 +27,13 @@ const ParsedCVSchema = z.object({
   })).default([]),
 })
 
-const PROMPT = `Sos un asistente especializado en CVs de docentes argentinos.
-Analizá si el texto corresponde razonablemente a un perfil docente o relacionado a educación (campo "es_cv_docente"). Si es false, dejá un breve mensaje en "observaciones" explicando por qué.
-Aún así, extraé cualquier dato útil (nombre, email, experiencia, etc) que encuentres.
-Devolvé ÚNICAMENTE un JSON válido que siga la estructura solicitada. No inventes datos ausentes. Usá null u omití campos no encontrados.
+const PROMPT = `Sos un asistente veloz especializado en extraer información de currículums.
+Analizá si el texto corresponde a un perfil docente o relacionado a la educación (campo "es_cv_docente"). Si no lo es, dejá un breve aviso en "observaciones".
+IMPORTANTE: AÚN SI NO ES UN CV DOCENTE, DEBÉS EXTRAER TODA LA INFORMACIÓN POSIBLE Y ADAPTARLA AL ESQUEMA:
+- Mapeá el nombre de la "Empresa" o lugar de trabajo al campo "institucion" de la experiencia.
+- Mapeá el "Puesto" o título al campo "cargo".
+- Mapeá las fechas, resúmenes y títulos universitarios como lo harías con un docente.
+Devolvé ÚNICAMENTE un JSON válido que siga la estructura. No inventes datos. Usá null u omití campos no encontrados.
 
 Texto del CV:\n`
 
