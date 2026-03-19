@@ -14,6 +14,7 @@ import { StepIdentity } from '@/components/wizard/StepIdentity';
 import { saveResumeAction } from '@/app/actions/cv';
 import { getResumeAction } from '@/app/actions/get-cv';
 import { Loader2 } from 'lucide-react';
+import { uploadFiles } from '@/lib/uploadthing';
 
 export default function CreateCvPage() {
   const searchParams = useSearchParams();
@@ -54,6 +55,19 @@ export default function CreateCvPage() {
     try {
       setIsSubmitting(true);
       const fullData = { ...formData, ...finalData, parsedFromPdf: !!parsedData };
+      
+      // Si hay una foto nueva esperando ser subida
+      if (fullData.photoFile) {
+        console.log("Subiendo nueva foto a Uploadthing...");
+        const [res] = await uploadFiles("profileImage", {
+          files: [fullData.photoFile],
+        });
+        if (res) {
+          fullData.photoUrl = res.url;
+          console.log("Foto subida con éxito:", res.url);
+        }
+      }
+
       await saveResumeAction(fullData);
       return true; // Exito
     } catch (error: any) {

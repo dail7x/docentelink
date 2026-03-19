@@ -42,6 +42,9 @@ export async function saveResumeAction(formData: any) {
   if (formData.experiencia && formData.experiencia.length > 0) score += 15;
   if (formData.formacion && formData.formacion.length > 0) score += 15;
 
+  // Si hay una foto nueva o existente, la guardamos en el perfil
+  const photoUrl = formData.photoUrl || null;
+
   // Preparamos el JsonResume
   const jsonResume = {
     basics: {
@@ -49,6 +52,7 @@ export async function saveResumeAction(formData: any) {
       email: formData.email,
       phone: formData.telefono,
       label: formData.tituloHabilitante,
+      image: photoUrl,
       location: {
         city: formData.localidad,
         region: formData.provincia,
