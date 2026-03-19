@@ -6,10 +6,14 @@ import { auth } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { v4 as uuidv4 } from 'uuid';
+import { syncClerkUserWithDb } from "@/lib/user";
 
 export async function saveResumeAction(formData: any) {
   const session = await auth();
   if (!session.userId) throw new Error("Unauthorized");
+
+  // Asegurar que el usuario existe en Turso antes de guardar CV (FK constraint user_id)
+  await syncClerkUserWithDb();
 
   // El username/slug debe ser único. Implementaremos validación aquí.
   const existingResume = await db.query.resumes.findFirst({
