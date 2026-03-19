@@ -29,11 +29,12 @@ const ParsedCVSchema = z.object({
 
 const PROMPT = `Sos un asistente veloz especializado en extraer información de currículums.
 Analizá si el texto corresponde a un perfil docente o educacional (campo "es_cv_docente"). Si no lo es, dejá un aviso en "observaciones".
-IMPORTANTE: AÚN SI NO ES UN CV DOCENTE, DEBÉS ADAPTAR TODO AL ENFOQUE DOCENTE. Mapea la información estrictamente con estos nombres de llaves JSON:
+IMPORTANTE: NO REESCRIBAS NI ADAPTES LA INFORMACIÓN. Extraé los datos EXACTAMENTE como aparecen en el texto original, sin importar el rubro (IT, Marketing, etc). 
+Mapea la información estrictamente con estos nombres de llaves JSON:
 - Extraé siempre los datos personales: "nombre", "email", y "telefono". No los dejes vacíos si existen en el texto.
-- "experiencia": Array donde mapearás la "Empresa" al campo "institucion", el "Puesto" al campo "cargo", la fecha de inicio al campo "desde" y la de fin al campo "hasta". Extraé también todo el detalle de tareas/responsabilidades en el campo "descripcion".
+- "experiencia": Array donde mapearás la "Empresa" al campo "institucion" (usá el nombre literal de la empresa), el "Puesto" al campo "cargo" (USÁ EL TÍTULO LITERAL DEL PUESTO, NO LO CAMBIES), la fecha de inicio al campo "desde" y la de fin al campo "hasta". Extraé también todo el detalle de tareas/responsabilidades en el campo "descripcion" TAL CUAL aparezcan.
 - "formacion": Array para estudios universitarios/cursos. Cada objeto DEBE tener las llaves "institucion", "titulo" y "anio" (NO uses "educacion" ni "fecha_obtencion").
-Devolvé ÚNICAMENTE un JSON válido. No inventes datos. Usá null en lugar de omitir campos.
+Devolvé ÚNICAMENTE un JSON válido. NO inventes datos ni parafrasees. Usá null en lugar de omitir campos.
 
 Texto del CV:\n`
 
