@@ -76,7 +76,7 @@ export default async function DashboardPage() {
                               <ExternalLink className="w-4 h-4 mr-2" /> Ver público
                            </Button>
                         </Link>
-                        <Link href="/cv/create">
+                        <Link href="/cv/create?edit=true">
                            <Button variant="outline" size="sm" className="font-bold">
                               <Edit3 className="w-4 h-4 mr-2" /> Editar
                            </Button>

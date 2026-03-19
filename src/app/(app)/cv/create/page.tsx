@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PdfUploader } from '@/components/parser/PdfUploader';
 import { Button } from '@/components/ui/Button';
 import { ArrowLeft, Sparkles, User, GraduationCap, Briefcase } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { StepPersonal } from '@/components/wizard/StepPersonal';
+import { useSearchParams } from 'next/navigation';
 
 import { StepExperience } from '@/components/wizard/StepExperience';
 import { StepIdentity } from '@/components/wizard/StepIdentity';
@@ -14,10 +15,18 @@ import { saveResumeAction } from '@/app/actions/cv';
 import { Loader2 } from 'lucide-react';
 
 export default function CreateCvPage() {
+  const searchParams = useSearchParams();
+  const isEditMode = searchParams.get('edit') === 'true';
   const [currentStep, setCurrentStep] = useState(0); // 0: Parser, 1: Personal, 2: Exp/Edu, 3: Meta
   const [parsedData, setParsedData] = useState<Record<string, any> | null>(null);
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isEditMode) {
+      setCurrentStep(1);
+    }
+  }, [isEditMode]);
 
   const handleDataParsed = (data: any) => {
     console.log("Datos recibidos de Gemini:", data);
@@ -37,6 +46,10 @@ export default function CreateCvPage() {
       await saveResumeAction(fullData);
       return true; // Exito
     } catch (error: any) {
+       // Next.js redirect lanza un error "NEXT_REDIRECT". Si es ese, no es un error real para el usuario.
+       if (error.message?.includes('NEXT_REDIRECT') || error.digest?.includes('NEXT_REDIRECT')) {
+         return true;
+       }
        console.error("Error al guardar:", error);
        alert(`Hubo un error al guardar tu CV: ${error.message || 'Intenta cambiar el slug'}`);
        setIsSubmitting(false);
