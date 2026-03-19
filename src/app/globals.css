@@ -1,26 +1,48 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #F5F4FE; /* dl.primary.bg */
+  --foreground: #2C2C2A; /* dl.text */
+  --primary: #534AB7;
+  --primary-dark: #3C3489;
+  --primary-mid: #7F77DD;
+  --primary-light: #EEEDFE;
+  --accent: #1D9E75;
+  --accent-dark: #0F6E56;
+  --accent-mid: #5DCAA5;
+  --accent-light: #E1F5EE;
+  --muted: #5F5E5A;
 }
 
-@theme inline {
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  
+  --color-dl-primary: var(--primary);
+  --color-dl-primary-dark: var(--primary-dark);
+  --color-dl-primary-mid: var(--primary-mid);
+  --color-dl-primary-light: var(--primary-light);
+  --color-dl-primary-bg: var(--background);
+  
+  --color-dl-accent: var(--accent);
+  --color-dl-accent-dark: var(--accent-dark);
+  --color-dl-accent-mid: var(--accent-mid);
+  --color-dl-accent-light: var(--accent-light);
+  
+  --color-dl-text: var(--foreground);
+  --color-dl-muted: var(--muted);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: "Inter", system-ui, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+@layer base {
+  * {
+    @apply border-dl-primary-light/20;
+  }
 }
