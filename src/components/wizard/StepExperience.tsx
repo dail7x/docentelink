@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { Button } from '@/components/ui/Button';
-import { Briefcase, GraduationCap, Plus, Trash2, Calendar, ArrowRight, Check } from 'lucide-react';
+import { Briefcase, GraduationCap, Plus, Trash2, Calendar, ArrowRight, Check, Sparkles, Quote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface StepExperienceProps {
@@ -15,6 +15,7 @@ interface StepExperienceProps {
 export const StepExperience = ({ initialData, onNext, onBack }: StepExperienceProps) => {
   const { register, control, handleSubmit, setValue, watch } = useForm({
     defaultValues: {
+      resumen: initialData?.resumen || "",
       experiencia: initialData?.experiencia || [],
       formacion: initialData?.formacion || [],
       cursos: initialData?.cursos || [],
@@ -36,6 +37,9 @@ export const StepExperience = ({ initialData, onNext, onBack }: StepExperiencePr
     name: "cursos",
   });
 
+  const resumenValue = watch("resumen");
+  const MAX_RESUMEN = 400;
+
   const onSubmit = (data: any) => {
     onNext(data);
   };
@@ -43,6 +47,47 @@ export const StepExperience = ({ initialData, onNext, onBack }: StepExperiencePr
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-16 animate-in fade-in slide-in-from-right-4 duration-700 pb-20">
       
+      {/* Sección Resumen Profesional (IA) */}
+      <div className="space-y-6">
+        <div className="space-y-1">
+          <h3 className="text-2xl font-black text-dl-primary-dark tracking-tight flex items-center gap-3">
+             <Quote className="w-6 h-6 text-dl-accent" />
+             Resumen Profesional
+          </h3>
+          <p className="text-xs text-dl-muted font-bold uppercase tracking-widest pl-9">
+            Una breve presentación sobre quién sos y tu pasión docente.
+          </p>
+        </div>
+
+        <div className="relative p-8 rounded-[2.5rem] bg-dl-accent/5 border-2 border-dl-accent/20 group focus-within:border-dl-accent/40 transition-all shadow-sm">
+           <div className="absolute top-6 right-8 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-dl-accent animate-pulse" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-dl-accent">Generado por IA docente</span>
+           </div>
+           
+           <textarea 
+             {...register("resumen")}
+             className="w-full bg-transparent text-lg font-medium text-dl-primary-dark outline-none min-h-[120px] resize-none leading-relaxed placeholder:text-dl-muted/40"
+             placeholder="Contanos un poco de tu trayectoria..."
+             maxLength={MAX_RESUMEN}
+           />
+           
+           <div className="flex justify-between items-center mt-4 pt-4 border-t border-dl-accent/10">
+              <p className="text-[9px] text-dl-accent/60 font-black uppercase tracking-widest italic">
+                 {resumenValue?.length < 50 ? "¡Un buen resumen te ayuda a destacar!" : "¡Se ve profesional!"}
+              </p>
+              <div className="flex items-center gap-2">
+                 <span className={cn(
+                   "text-[10px] font-black tracking-widest uppercase",
+                   resumenValue?.length > MAX_RESUMEN * 0.9 ? "text-orange-500" : "text-dl-muted"
+                 )}>
+                   {resumenValue?.length || 0} / {MAX_RESUMEN}
+                 </span>
+              </div>
+           </div>
+        </div>
+      </div>
+
       {/* Sección Trayectoria */}
       <div className="space-y-8">
         <div className="flex items-center justify-between">
@@ -66,16 +111,14 @@ export const StepExperience = ({ initialData, onNext, onBack }: StepExperiencePr
              const toggleActual = (e: React.MouseEvent) => {
                 e.preventDefault();
                 e.stopPropagation();
-                // Si ya es actual, lo limpiamos para forzar el estado false
                 if (isActual) {
-                  setValue(`experiencia.${index}.hasta`, "temporal-val-to-force-state");
+                  setValue(`experiencia.${index}.hasta`, "temporal-val");
                   setTimeout(() => setValue(`experiencia.${index}.hasta`, "unset"), 0); 
                 } else {
                   setValue(`experiencia.${index}.hasta`, "actual");
                 }
              };
 
-             // Verificar si realmente es actual comparando contra el flag
              const realIsActual = hastaValue === "actual" || !hastaValue || hastaValue === "";
 
              return (

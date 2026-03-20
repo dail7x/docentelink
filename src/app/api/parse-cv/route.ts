@@ -12,6 +12,7 @@ const ParsedCVSchema = z.object({
   nombre: z.string().optional().nullable(),
   email: z.string().optional().nullable(),
   telefono: z.string().optional().nullable(),
+  resumen: z.string().optional().nullable(),
   tituloHabilitante: z.string().optional().nullable(),
   experiencia: z.array(z.object({
     institucion: z.string().optional().nullable().default(""),
@@ -31,25 +32,30 @@ const ParsedCVSchema = z.object({
   })).default([]),
 })
 
-const PROMPT = `Sos un asistente veloz especializado en extraer información de currículums.
+const PROMPT = `Sos un asistente veloz especializado en extraer información de currículums de docentes.
 Analizá si el texto corresponde a un perfil docente o educacional (campo "es_cv_docente"). Si no lo es, dejá un aviso en "observaciones".
 
 REGLAS CRÍTICAS DE EXTRACCIÓN:
-1. NO REESCRIBAS NI ADAPTES LA INFORMACIÓN. Extraé los datos EXACTAMENTE como aparecen.
+1. NO REESCRIBAS NI ADAPTES LA INFORMACIÓN DE EXPERIENCIA/FORMACIÓN. Extraé los datos EXACTAMENTE como aparecen.
 2. ORDEN CRONOLÓGICO: La lista de "experiencia" DEBE estar ordenada de la más RECIENTE a la más ANTIGUA.
 3. INTEGRIDAD DE DATOS: Asegurate de que cada "descripcion" de tareas pertenezca exclusivamente a su "cargo".
 4. FORMATO DE FECHAS (IMPORTANTE): Extraé las fechas de experiencia (desde/hasta) en formato "YYYY-MM" (Ej: "2020-03"). 
    - Si solo dice el año, usá "YYYY-01". 
    - Si dice "Actual", dejalo vacío o usá null.
-5. FORMATO CAMEL CASE: Para nombres de "institucion" (en experiencia, formacion y cursos), aplicá formato Capitalizado.
+5. FORMATO CAMEL CASE: Para nombres de "institucion", aplicá formato Capitalizado.
+6. RESUMEN PROFESIONAL (IA): 
+   - Si el CV TIENE un resumen/perfil, extraelo y refinalo para que sea profesional y cálido (máximo 400 caracteres).
+   - Si NO TIENE un resumen, GENERÁ uno basado en los datos extraídos (años de experiencia, materias destacadas, títulos y logros).
+   - El resumen debe estar en primera persona, ser entusiasta y profesional.
 
 MAPEO JSON:
-- "nombre", "email", y "telefono": Datos personales.
+- "nombre", "email", "telefono": Datos personales.
+- "resumen": Perfil profesional (extraído o generado).
 - "experiencia": Array de objetos con {institucion, cargo, desde, hasta, descripcion}.
-- "formacion": {institucion, titulo, anio}. Si está en curso, anio puede ser null.
+- "formacion": {institucion, titulo, anio}.
 - "cursos": {nombre, institucion}.
 
-Devolvé ÚNICAMENTE un JSON válido. NO inventes datos ni parafrasees. Usá null en lugar de omitir campos.
+Devolvé ÚNICAMENTE un JSON válido. NO inventes datos excepto para el campo "resumen" si falta. Usá null en lugar de omitir campos si no encuentras datos.
 `
 
 export async function POST(req: Request) {
@@ -84,4 +90,3 @@ export async function POST(req: Request) {
     })
   }
 }
-
