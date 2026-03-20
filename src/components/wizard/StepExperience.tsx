@@ -3,7 +3,8 @@
 import React from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { Button } from '@/components/ui/Button';
-import { Briefcase, GraduationCap, Plus, Trash2, Calendar, ArrowRight, Clock } from 'lucide-react';
+import { Briefcase, GraduationCap, Plus, Trash2, Calendar, ArrowRight, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface StepExperienceProps {
   initialData: any;
@@ -57,10 +58,25 @@ export const StepExperience = ({ initialData, onNext, onBack }: StepExperiencePr
            </Button>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
            {expFields.map((field, index) => {
              const hastaValue = watch(`experiencia.${index}.hasta`);
-             const isActual = !hastaValue || hastaValue === "";
+             const isActual = hastaValue === "actual" || !hastaValue || hastaValue === "";
+
+             const toggleActual = (e: React.MouseEvent) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Si ya es actual, lo limpiamos para forzar el estado false
+                if (isActual) {
+                  setValue(`experiencia.${index}.hasta`, "temporal-val-to-force-state");
+                  setTimeout(() => setValue(`experiencia.${index}.hasta`, "unset"), 0); 
+                } else {
+                  setValue(`experiencia.${index}.hasta`, "actual");
+                }
+             };
+
+             // Verificar si realmente es actual comparando contra el flag
+             const realIsActual = hastaValue === "actual" || !hastaValue || hastaValue === "";
 
              return (
                <div key={field.id} className="p-8 rounded-[2rem] bg-white border-2 border-dl-primary-light/30 shadow-sm relative group hover:border-dl-accent/30 transition-all">
@@ -70,16 +86,15 @@ export const StepExperience = ({ initialData, onNext, onBack }: StepExperiencePr
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                      <div className="space-y-2">
-                         <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted">Institución / Colegio / Empresa</label>
-                         <input {...register(`experiencia.${index}.institucion`)} className="w-full bg-transparent text-xl font-bold outline-none border-b-2 border-dl-primary-light/20 focus:border-dl-accent transition-colors pb-2" placeholder="Ej: Escuela Normal N° 1" />
+                          <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted">Institución / Colegio / Empresa</label>
+                          <input {...register(`experiencia.${index}.institucion`)} className="w-full bg-transparent text-xl font-bold outline-none border-b-2 border-dl-primary-light/20 focus:border-dl-accent transition-colors pb-2" placeholder="Ej: Escuela Normal N° 1" />
                      </div>
                      <div className="space-y-2">
-                         <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted">Cargo / Materia dictada</label>
-                         <input {...register(`experiencia.${index}.cargo`)} className="w-full bg-transparent text-xl font-bold outline-none border-b-2 border-dl-primary-light/20 focus:border-dl-accent transition-colors pb-2" placeholder="Ej: Profesor de Geografía" />
+                          <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted">Cargo / Materia dictada</label>
+                          <input {...register(`experiencia.${index}.cargo`)} className="w-full bg-transparent text-xl font-bold outline-none border-b-2 border-dl-primary-light/20 focus:border-dl-accent transition-colors pb-2" placeholder="Ej: Profesor de Geografía" />
                      </div>
                      
-                     {/* Fechas Compactas con UI Mejorada */}
-                     <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 items-end bg-dl-primary-bg/10 p-6 rounded-2xl border-2 border-transparent focus-within:border-dl-accent/10 transition-all">
+                     <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 items-start bg-dl-primary-bg/10 p-6 rounded-2xl border-2 border-transparent transition-all">
                         <div className="space-y-2">
                           <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted italic flex items-center gap-2">
                              Desde <Calendar className="w-3.5 h-3.5 opacity-40" />
@@ -90,33 +105,45 @@ export const StepExperience = ({ initialData, onNext, onBack }: StepExperiencePr
                              className="w-full bg-white px-4 py-2.5 rounded-lg border-2 border-dl-primary-light/10 focus:border-dl-accent outline-none font-bold text-dl-primary-dark transition-all"
                           />
                         </div>
+
                         <div className="space-y-2">
-                          <div className="flex justify-between items-center px-1">
+                          <div className="flex justify-between items-center mb-1">
                              <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted italic flex items-center gap-2">
                                 Hasta <Calendar className="w-3.5 h-3.5 opacity-40" />
                              </label>
                              <button 
                                type="button" 
-                               onClick={() => setValue(`experiencia.${index}.hasta`, "")}
-                               className={`text-[9px] font-black uppercase px-2 py-0.5 rounded transition-all ${isActual ? 'bg-dl-accent text-white' : 'bg-dl-muted/10 text-dl-muted hover:bg-dl-accent/20'}`}
+                               onClick={toggleActual}
+                               className="flex items-center gap-2 group cursor-pointer"
                              >
-                                {isActual ? 'Trabajo Actual' : 'Marcar como Actual'}
+                                <div className={cn(
+                                   "w-4 h-4 rounded border-2 flex items-center justify-center transition-all",
+                                   realIsActual ? "bg-dl-accent border-dl-accent" : "border-dl-muted/30 bg-white"
+                                )}>
+                                   {realIsActual && <Check className="w-3 h-3 text-white stroke-[4]" />}
+                                </div>
+                                <span className={cn("text-[9px] font-black uppercase tracking-widest", realIsActual ? "text-dl-accent" : "text-dl-muted")}>
+                                   Trabajo Actual
+                                </span>
                              </button>
                           </div>
+
                           <div className="relative">
                              <input 
-                                type="month"
+                                type={realIsActual ? "text" : "month"}
                                 {...register(`experiencia.${index}.hasta`)} 
-                                className={`w-full px-4 py-2.5 rounded-lg border-2 outline-none font-bold transition-all ${isActual ? 'bg-dl-muted/5 border-transparent text-dl-muted/40 cursor-not-allowed' : 'bg-white border-dl-primary-light/10 focus:border-dl-accent text-dl-primary-dark'}`}
-                                disabled={isActual}
+                                value={realIsActual ? "Actualmente trabajando aquí" : (hastaValue || "")}
+                                onChange={(e) => {
+                                   if (!realIsActual) setValue(`experiencia.${index}.hasta`, e.target.value);
+                                }}
+                                className={cn(
+                                   "w-full px-4 py-2.5 rounded-lg border-2 outline-none font-bold transition-all",
+                                   realIsActual 
+                                     ? "bg-dl-accent/5 border-dl-accent/20 text-dl-accent/70 italic text-sm cursor-default" 
+                                     : "bg-white border-dl-primary-light/10 focus:border-dl-accent text-dl-primary-dark"
+                                )}
+                                readOnly={realIsActual}
                              />
-                             {isActual && (
-                                <div className="absolute inset-0 flex items-center px-4 pointer-events-none">
-                                   <span className="text-sm font-bold text-dl-muted italic flex items-center gap-2">
-                                      <Clock className="w-4 h-4" /> Actualmente trabajando aquí
-                                   </span>
-                                </div>
-                             )}
                           </div>
                         </div>
                      </div>
@@ -209,8 +236,8 @@ export const StepExperience = ({ initialData, onNext, onBack }: StepExperiencePr
                       <input {...register(`cursos.${index}.nombre`)} className="w-full bg-transparent font-bold outline-none border-b-2 border-dl-primary-light/20 focus:border-dl-accent transition-colors pb-2" placeholder="Ej: Introducción a la Robótica" />
                    </div>
                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted">Institución / Dictado por</label>
-                      <input {...register(`cursos.${index}.institucion`)} className="w-full bg-transparent font-black outline-none border-b-2 border-dl-primary-light/20 focus:border-dl-accent transition-colors pb-2 text-dl-muted/70" placeholder="Ej: Coursera / Google" />
+                       <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted">Institución / Dictado por</label>
+                       <input {...register(`cursos.${index}.institucion`)} className="w-full bg-transparent font-black outline-none border-b-2 border-dl-primary-light/20 focus:border-dl-accent transition-colors pb-2 text-dl-muted/70" placeholder="Ej: Coursera / Google" />
                    </div>
                 </div>
              </div>
