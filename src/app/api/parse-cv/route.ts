@@ -33,12 +33,20 @@ const ParsedCVSchema = z.object({
 
 const PROMPT = `Sos un asistente veloz especializado en extraer información de currículums.
 Analizá si el texto corresponde a un perfil docente o educacional (campo "es_cv_docente"). Si no lo es, dejá un aviso en "observaciones".
-IMPORTANTE: NO REESCRIBAS NI ADAPTES LA INFORMACIÓN. Extraé los datos EXACTAMENTE como aparecen en el texto original.
-Mapea la información estrictamente con estos nombres de llaves JSON:
+
+REGLAS CRÍTICAS DE EXTRACCIÓN:
+1. NO REESCRIBAS NI ADAPTES LA INFORMACIÓN. Extraé los datos EXACTAMENTE como aparecen.
+2. ORDEN CRONOLÓGICO: La lista de "experiencia" DEBE estar ordenada de la más RECIENTE a la más ANTIGUA según las fechas del texto.
+3. INTEGRIDAD DE DATOS: Asegurate de que cada "descripcion" de tareas pertenezca exclusivamente a su "cargo" e "institucion" correspondiente. NO mezcles bloques de texto entre distintas experiencias.
+4. UNICIDAD: No dupliques experiencias que sean el mismo cargo en la misma institución en el mismo periodo.
+5. FORMATO CAMEL CASE: Para nombres de "institucion" (en experiencia, formacion y cursos), aplicá formato Capitalizado (Ej: "Escuela Normal Numero Uno" en lugar de "ESCUELA NORMAL...").
+
+MAPEO JSON:
 - "nombre", "email", y "telefono": Datos personales.
-- "experiencia": Array (institucion, cargo, desde, hasta, descripcion).
-- "formacion": SOLO formación académica formal (Universitaria, Terciaria, Profesorados que otorguen TÍTULO). Cada objeto DEBE tener "institucion", "titulo" y "anio". Si no tiene año o es un curso corto, NO lo pongas acá.
-- "cursos": Cursos, talleres, diplomaturas o certificaciones complementarias. Mapeá a "nombre" e "institucion".
+- "experiencia": Array de objetos con {institucion, cargo, desde, hasta, descripcion}.
+- "formacion": Solo formación académica formal (Universitaria/Terciaria/Profesorados con título). {institucion, titulo, anio}.
+- "cursos": Cursos, certificaciones y talleres. {nombre, institucion}.
+
 Devolvé ÚNICAMENTE un JSON válido. NO inventes datos ni parafrasees. Usá null en lugar de omitir campos.
 `
 

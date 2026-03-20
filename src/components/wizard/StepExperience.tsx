@@ -73,14 +73,26 @@ export const StepExperience = ({ initialData, onNext, onBack }: StepExperiencePr
                        <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted">Cargo / Materia dictada</label>
                        <input {...register(`experiencia.${index}.cargo`)} className="w-full bg-transparent text-xl font-bold outline-none border-b-2 border-dl-primary-light/20 focus:border-dl-accent transition-colors pb-2" placeholder="Ej: Profesor de Geografía" />
                    </div>
-                   <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                   <div className="md:col-span-2 grid grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted italic">Desde</label>
-                        <input {...register(`experiencia.${index}.desde`)} className="w-full bg-transparent font-medium outline-none border-b border-dl-primary-light/20 focus:border-dl-accent" placeholder="Marzo 2020" />
+                        <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted italic flex items-center gap-1.5">
+                           Desde <Calendar className="w-3 h-3 opacity-40" />
+                        </label>
+                        <input 
+                           type="month"
+                           {...register(`experiencia.${index}.desde`)} 
+                           className="w-full bg-transparent font-medium outline-none border-b border-dl-primary-light/20 focus:border-dl-accent h-10 cursor-pointer" 
+                        />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted italic">Hasta</label>
-                        <input {...register(`experiencia.${index}.hasta`)} className="w-full bg-transparent font-medium outline-none border-b border-dl-primary-light/20 focus:border-dl-accent" placeholder="Actual o Fecha" />
+                        <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted italic flex items-center gap-1.5">
+                           Hasta <Calendar className="w-3 h-3 opacity-40" />
+                        </label>
+                        <input 
+                           type="month"
+                           {...register(`experiencia.${index}.hasta`)} 
+                           className="w-full bg-transparent font-medium outline-none border-b border-dl-primary-light/20 focus:border-dl-accent h-10 cursor-pointer" 
+                        />
                       </div>
                    </div>
                    <div className="md:col-span-2 space-y-2">
@@ -126,7 +138,14 @@ export const StepExperience = ({ initialData, onNext, onBack }: StepExperiencePr
                    </div>
                    <div className="md:col-span-2">
                       <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted italic">Año de Egreso</label>
-                      <input {...register(`formacion.${index}.anio`)} className="w-32 block bg-transparent font-medium outline-none border-b border-dl-primary-light/20 focus:border-dl-accent" placeholder="2015" />
+                      <input 
+                         type="number"
+                         min="1950"
+                         max="2030"
+                         {...register(`formacion.${index}.anio`)} 
+                         className="w-32 block bg-transparent font-medium outline-none border-b border-dl-primary-light/20 focus:border-dl-accent h-10" 
+                         placeholder="2015" 
+                      />
                    </div>
                 </div>
              </div>
