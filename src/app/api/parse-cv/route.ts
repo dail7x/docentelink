@@ -28,24 +28,30 @@ const ParsedCVSchema = z.object({
   })).default([]),
 });
 
-const PROMPT = `Sos un asistente veloz especializado en extraer información de currículums de docentes.
-Analizá si el texto corresponde a un perfil docente o educacional (campo "es_cv_docente"). Si no lo es, dejá un aviso en "observaciones".
+const PROMPT = `Sos un experto en extracción de datos para CVs de docentes argentinos.
+Tu misión es leer el texto de un CV y devolver un JSON con la estructura exacta detallada abajo.
 
-REGLAS CRÍTICAS DE EXTRACCIÓN:
-1. NO REESCRIBAS NI ADAPTES LA INFORMACIÓN DE EXPERIENCIA/FORMACIÓN. Extraé los datos EXACTAMENTE como aparecen.
-2. ORDEN CRONOLÓGICO: La lista de "experiencia" DEBE estar ordenada de la más RECIENTE a la más ANTIGUA.
-3. INTEGRIDAD DE DATOS: Asegurate de que cada "descripcion" de tareas pertenezca exclusivamente a su "cargo".
-4. FORMATO DE FECHAS (IMPORTANTE): Extraé las fechas de experiencia (desde/hasta) en formato "YYYY-MM" (Ej: "2020-03"). 
-   - Si solo dice el año, usá "YYYY-01". 
-   - Si dice "Actual", dejalo vacío o usá null.
-5. FORMATO CAMEL CASE: Para nombres de "institucion", aplicá formato Capitalizado.
-6. RESUMEN PROFESIONAL (IA): 
-   - Si el CV TIENE un resumen/perfil, extraelo y refinalo para que sea profesional y cálido (máximo 400 caracteres).
-   - Si NO TIENE un resumen, GENERÁ uno basado en los datos extraídos (años de experiencia, materias destacadas, títulos y logros).
-   - El resumen debe estar en primera persona, ser entusiasta y profesional.
+REGLAS DE ORO:
+1. ORDEN CRONOLÓGICO INVERSO: La lista de "experiencia" DEBE estar ordenada de la más RECIENTE a la más ANTIGUA.
+2. FORMATEO DE NOMBRES: El campo "nombre" debe estar en CAPITAL CASE (Ej: "Juan Pérez"). No uses todo minúsculas ni todo mayúsculas.
+3. MAX_CHARACTERS (RESUMEN): El campo "resumen" DEBE tener un máximo de 380 caracteres. Sé conciso, profesional y cálido (en primera persona).
+4. PERSONAL DATA: Extraé el "nombre", "email" y "telefono" sin falta.
+5. DATES (EXPERIENCIA): Formato "YYYY-MM" (ej: "2018-03"). Si es trabajo actual, "hasta" es null.
+6. NO INVENTAR: Si un dato no está, devolvé null.
 
-Devolvé ÚNICAMENTE un JSON válido. NO inventes datos excepto para el campo "resumen" si falta. Usá null en lugar de omitir campos si no encuentras datos.
-`;
+ESTRUCTURA JSON:
+{
+  "nombre": string | null,
+  "email": string | null,
+  "telefono": string | null,
+  "resumen": string | null,
+  "tituloHabilitante": string | null,
+  "experiencia": [{"institucion", "cargo", "desde", "hasta", "descripcion"}],
+  "formacion": [{"titulo", "institucion", "anio"}],
+  "cursos": [{"nombre", "institucion"}]
+}
+
+Devolvé ÚNICAMENTE el JSON.`;
 
 export async function POST(req: Request) {
   try {
@@ -55,7 +61,6 @@ export async function POST(req: Request) {
       throw new Error("OPENROUTER_API_KEY no configurada");
     }
 
-    // Usamos DeepSeek Chat (v3) vía OpenRouter, que es muy económico/gratuito según créditos
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -68,30 +73,42 @@ export async function POST(req: Request) {
         model: "deepseek/deepseek-chat", 
         messages: [
           { role: "system", content: PROMPT },
-          { role: "user", content: `Texto del CV:\n${text}` }
+          { role: "user", content: `Texto del CV extraído:\n${text}` }
         ],
-        response_format: { type: "json_object" }
+        response_format: { type: "json_object" },
+        max_tokens: 2500,
+        temperature: 0.1
       }),
     });
 
     const data = await response.json();
-    
-    if (!response.ok) {
-      console.error("Error de OpenRouter:", data);
-      throw new Error(data.error?.message || "Error en OpenRouter");
-    }
+    if (!response.ok) throw new Error(data.error?.message || "Error en OpenRouter");
 
     const content = data.choices[0].message.content;
-    const parsed = ParsedCVSchema.parse(JSON.parse(content));
+    const rawParsed = JSON.parse(content);
     
+    // Normalizar nombre: Capital Case
+    if (rawParsed.nombre) {
+      rawParsed.nombre = rawParsed.nombre
+        .split(' ')
+        .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(' ');
+    }
+
+    // Safety Crop Resumen
+    if (rawParsed.resumen && rawParsed.resumen.length > 400) {
+      rawParsed.resumen = rawParsed.resumen.substring(0, 397) + "...";
+    }
+
+    const parsed = ParsedCVSchema.parse(rawParsed);
     return Response.json({ data: parsed, success: true });
 
   } catch (error: any) {
-    console.error("Error en Parser (DeepSeek/OpenRouter):", error);
+    console.error("Error en Parser:", error);
     return Response.json({
       data: {},
       success: false,
-      message: `No pudimos estructurar el CV: ${error.message || 'Error desconocido'}. Por favor, completa el formulario manualmente.`
+      message: `No pudimos estructurar el CV: ${error.message || 'Error desconocido'}.`
     });
   }
 }

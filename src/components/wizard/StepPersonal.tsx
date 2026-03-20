@@ -5,16 +5,19 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/Button';
-import { User, Mail, Phone, CheckCircle2, AlertCircle, Loader2, ArrowRight, Globe } from 'lucide-react';
+import { User, Mail, Phone, CheckCircle2, AlertCircle, Loader2, ArrowRight, ShieldCheck } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { checkSlugAction } from '@/app/actions/check-slug';
 import { PhotoEditor } from './PhotoEditor';
 import { uploadFiles } from '@/lib/uploadthing';
+
 
 const personalSchema = z.object({
   nombre: z.string().min(2, "El nombre es muy corto"),
   apellido: z.string().min(2, "El apellido es muy corto"),
   email: z.string().email("Email inválido"),
   telefono: z.string().min(8, "Teléfono inválido"),
+  mostrarTelPublico: z.boolean().default(false), // Nuevo check de privacidad
   slug: z.string()
     .min(3, "Mínimo 3 caracteres")
     .regex(/^[a-z0-9-]+$/, "Solo minúsculas, números y guiones"),
@@ -56,6 +59,7 @@ export const StepPersonal = ({ initialData, onNext }: StepPersonalProps) => {
       apellido: initialData?.surname || nameData.apellido,
       email: initialData?.email || "",
       telefono: initialData?.telefono || "",
+      mostrarTelPublico: initialData?.mostrarTelPublico ?? false,
       slug: initialData?.slug || "",
       photoUrl: initialData?.photoUrl || "",
     },
@@ -66,6 +70,7 @@ export const StepPersonal = ({ initialData, onNext }: StepPersonalProps) => {
   const currentNombre = watch("nombre");
   const currentApellido = watch("apellido");
   const photoUrl = watch("photoUrl");
+  const mostrarTelPublico = watch("mostrarTelPublico");
 
   const validateSlug = useCallback(async (val: string) => {
     if (val && val.length >= 3) {
@@ -74,7 +79,6 @@ export const StepPersonal = ({ initialData, onNext }: StepPersonalProps) => {
         const { available } = await checkSlugAction(val);
         setSlugStatus(available ? 'available' : 'taken');
       } catch (err) {
-        console.error("Error validando slug:", err);
         setSlugStatus('idle');
       }
     }
@@ -101,7 +105,6 @@ export const StepPersonal = ({ initialData, onNext }: StepPersonalProps) => {
   const handlePhotoProcessed = async (file: File) => {
     setIsUploading(true);
     try {
-      // FIX: Use the correct endpoint name from uploadthing core.ts
       const res = await uploadFiles("profileImage", { files: [file] });
       if (res?.[0]?.url) {
         setValue("photoUrl", res[0].url, { shouldValidate: true });
@@ -161,7 +164,6 @@ export const StepPersonal = ({ initialData, onNext }: StepPersonalProps) => {
               <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-dl-muted group-focus-within:text-dl-accent transition-colors" />
               <input {...register("nombre")} onChange={handleNombreChange} className={inputClasses} placeholder="Nombre" />
             </div>
-            {errors.nombre && <p className="text-[10px] text-red-500 font-bold pl-2">{errors.nombre.message}</p>}
           </div>
 
           <div className="space-y-1">
@@ -187,24 +189,45 @@ export const StepPersonal = ({ initialData, onNext }: StepPersonalProps) => {
               <input {...register("telefono")} className={inputClasses} placeholder="Teléfono" />
             </div>
           </div>
+          
+          {/* Checkbox Privacidad Teléfono */}
+          <div className="md:col-span-2 mt-4 p-4 rounded-2xl bg-dl-primary-bg/50 border-2 border-dl-primary-light/10 flex items-center justify-between group hover:border-dl-accent/20 transition-all">
+             <div className="flex items-center gap-3">
+                <div className="p-2 bg-white rounded-xl shadow-sm">
+                   <ShieldCheck className={cn("w-5 h-5 transition-colors", mostrarTelPublico ? "text-dl-accent" : "text-dl-muted")} />
+                </div>
+                <div>
+                  <p className="text-xs font-black text-dl-primary-dark uppercase tracking-tight">Privacidad del Teléfono</p>
+                  <p className="text-[10px] font-bold text-dl-muted italic">Muestra tu botón de WhatsApp en el perfil público.</p>
+                </div>
+             </div>
+             <button
+                type="button"
+                role="switch"
+                aria-checked={mostrarTelPublico}
+                onClick={() => setValue("mostrarTelPublico", !mostrarTelPublico)}
+                className={cn(
+                  "relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200",
+                  mostrarTelPublico ? "bg-dl-accent shadow-lg shadow-dl-accent/20" : "bg-dl-primary-light/30"
+                )}
+              >
+                <span className={cn(
+                  "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition duration-200",
+                  mostrarTelPublico ? "translate-x-5" : "translate-x-0"
+                )} />
+              </button>
+          </div>
         </div>
       </div>
 
-      {/* Slug centrado y resaltado */}
+      {/* Slug */}
       <div className="pt-4 border-t-2 border-dl-primary-light/5 flex flex-col items-center">
         <div className="w-full max-w-xl space-y-2">
           <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted pl-2 block text-center sm:text-left">TU LINK ÚNICO (PERFIL)</label>
-          
-          {/* Link Preview (Visible en Mobile) */}
-          <div className="sm:hidden flex items-center gap-2 px-2 pb-1 text-[10px] text-dl-muted font-bold truncate">
-            <Globe className="w-3 h-3 text-dl-accent shrink-0" />
-            <span>docentelink.ar/cv/{slugValue || "..."}</span>
-          </div>
-
           <div className={`
             relative flex items-center bg-white border-2 rounded-2xl px-6 py-3 transition-all duration-300
-            ${slugStatus === 'available' ? 'border-green-500 bg-green-50/20 shadow-lg shadow-green-500/5' : 
-              slugStatus === 'taken' ? 'border-red-500 bg-red-50/20 shadow-lg shadow-red-500/5' : 
+            ${slugStatus === 'available' ? 'border-green-500 bg-green-50/20 shadow-lg' : 
+              slugStatus === 'taken' ? 'border-red-500 bg-red-50/20 shadow-lg' : 
               'border-dl-primary-light/30 focus-within:border-dl-accent focus-within:shadow-xl'}
           `}>
             <span className="text-dl-muted font-bold text-xs hidden sm:inline select-none opacity-50 mr-1">docentelink.ar/cv/</span>
@@ -220,11 +243,6 @@ export const StepPersonal = ({ initialData, onNext }: StepPersonalProps) => {
               {slugStatus === 'available' && <CheckCircle2 className="w-5 h-5 text-green-500" />}
               {slugStatus === 'taken' && <AlertCircle className="w-5 h-5 text-red-500" />}
             </div>
-          </div>
-          <div className="flex justify-between px-2 mt-1">
-             <p className="text-[9px] text-dl-muted font-bold italic uppercase tracking-tighter">Minúsculas, números y guiones.</p>
-             {slugStatus === 'available' && <span className="text-[9px] text-green-600 font-black uppercase tracking-widest animate-pulse">¡DISPONIBLE!</span>}
-             {slugStatus === 'taken' && <span className="text-[9px] text-red-600 font-black uppercase tracking-widest">Ya está ocupado</span>}
           </div>
         </div>
       </div>

@@ -15,7 +15,6 @@ export async function getResumeAction() {
 
   if (!resume) return null;
 
-  // Mapeamos el jsonResume guardado de vuelta al formato que espera el Wizard (formData)
   const jr = (resume.jsonResume as any) || {};
   const meta = jr.meta?.docente || {};
   const basics = jr.basics || {};
@@ -24,18 +23,25 @@ export async function getResumeAction() {
     nombre: basics.name || "",
     email: basics.email || "",
     telefono: basics.phone || "",
+    mostrarTelPublico: meta.mostrarTelPublico ?? false, // Recuperamos flag
     slug: resume.username,
     tituloHabilitante: meta.tituloHabilitante || basics.label || "",
-    provincia: meta.provincia || basics.location?.region || "",
+    provincia: meta.provincia || basics.location?.region || "Buenos Aires",
     localidad: meta.localidad || basics.location?.city || "",
+    localidades: meta.localidades || (meta.localidad ? [meta.localidad] : []), // Recuperamos lista de pills
     disponibilidad: meta.disponibilidad || "inmediata",
     nivelEducativo: meta.nivelEducativo || [],
     materias: meta.materias || [],
-    resumen: meta.resumen || "", // New field
-    tipoEmpleo: meta.tipoEmpleo || [],
+    resumen: meta.resumen || "",
+    mostrarResumenPublico: meta.mostrarResumenPublico ?? true,
+    mostrarNivelesPublico: meta.mostrarNivelesPublico ?? true,
+    habilidades: meta.habilidades || [],
+    turnos: meta.turnos || ["manana", "tarde"],
+    diasDisponibles: meta.diasDisponibles || ["lun", "mar", "mie", "jue", "vie"],
+    disponibleDesde: meta.disponibleDesde || "",
     experiencia: jr.work || [],
     formacion: jr.education || [],
-    photoUrl: basics.image || "", // FIX: Changed 'imagen' to 'photoUrl' to match StepPersonal
+    photoUrl: basics.image || "",
     cursos: meta.cursos || [],
   };
 }

@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { Button } from '@/components/ui/Button';
-import { Briefcase, GraduationCap, Plus, Trash2, Calendar, ArrowRight, Check, Sparkles, Quote } from 'lucide-react';
+import { Briefcase, GraduationCap, Plus, Trash2, Calendar, ArrowRight, Check, Sparkles, Quote, Zap, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface StepExperienceProps {
@@ -16,9 +16,11 @@ export const StepExperience = ({ initialData, onNext, onBack }: StepExperiencePr
   const { register, control, handleSubmit, setValue, watch } = useForm({
     defaultValues: {
       resumen: initialData?.resumen || "",
+      mostrarResumenPublico: initialData?.mostrarResumenPublico ?? true,
       experiencia: initialData?.experiencia || [],
       formacion: initialData?.formacion || [],
       cursos: initialData?.cursos || [],
+      habilidades: initialData?.habilidades || [],
     },
   });
 
@@ -38,7 +40,36 @@ export const StepExperience = ({ initialData, onNext, onBack }: StepExperiencePr
   });
 
   const resumenValue = watch("resumen");
+  const mostrarResumenPublico = watch("mostrarResumenPublico");
+  const selectedHabilidades = watch("habilidades");
   const MAX_RESUMEN = 400;
+
+  const [habInput, setHabInput] = useState("");
+  const habRef = useRef<HTMLDivElement>(null);
+
+  const HABILIDADES_SUGERIDAS = [
+    "Microsoft Office", "Google Workspace", "Excel Avanzado", "PowerPoint",
+    "Canva", "Adobe Photoshop", "Premiere Pro", "Audacity",
+    "Inglés", "Portugués", "Italiano", "Francés",
+    "Trabajo en equipo", "Comunicación asertiva", "Resolución de conflictos",
+    "Gestión del tiempo", "Liderazgo", "Empatía", "Adaptabilidad",
+    "Moodle", "Google Classroom", "Zoom", "Teams", "TIC aplicadas a la educación"
+  ];
+
+  const addHabilidad = (val: string) => {
+    const v = val.trim();
+    const current = selectedHabilidades || [];
+    if (v && !current.includes(v)) setValue("habilidades", [...current, v]);
+    setHabInput("");
+  };
+
+  const removeHabilidad = (val: string) => {
+    setValue("habilidades", (selectedHabilidades || []).filter((h: string) => h !== val));
+  };
+
+  const filteredHabSug = HABILIDADES_SUGERIDAS.filter(s =>
+    s.toLowerCase().includes(habInput.toLowerCase()) && !selectedHabilidades.includes(s)
+  );
 
   const onSubmit = (data: any) => {
     onNext(data);
@@ -60,9 +91,28 @@ export const StepExperience = ({ initialData, onNext, onBack }: StepExperiencePr
         </div>
 
         <div className="relative p-8 rounded-[2.5rem] bg-dl-accent/5 border-2 border-dl-accent/20 group focus-within:border-dl-accent/40 transition-all shadow-sm">
-           <div className="absolute top-6 right-8 flex items-center gap-2">
+           <div className="absolute top-6 right-8 flex items-center gap-3">
               <Sparkles className="w-4 h-4 text-dl-accent animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-dl-accent">Generado por IA docente</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-dl-accent">Generado por IA</span>
+              {/* Toggle mostrar en perfil */}
+              <label className="flex items-center gap-2 cursor-pointer ml-4">
+                <span className="text-[9px] font-black uppercase tracking-widest text-dl-muted">Mostrar en perfil</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={mostrarResumenPublico}
+                  onClick={() => setValue("mostrarResumenPublico", !mostrarResumenPublico)}
+                  className={cn(
+                    "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200",
+                    mostrarResumenPublico ? "bg-dl-accent" : "bg-dl-primary-light/30"
+                  )}
+                >
+                  <span className={cn(
+                    "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition duration-200",
+                    mostrarResumenPublico ? "translate-x-4" : "translate-x-0"
+                  )} />
+                </button>
+              </label>
            </div>
            
            <textarea 
@@ -285,6 +335,45 @@ export const StepExperience = ({ initialData, onNext, onBack }: StepExperiencePr
                 </div>
              </div>
            ))}
+        </div>
+      </div>
+
+      {/* Sección Habilidades / Otros Conocimientos */}
+      <div className="space-y-8" ref={habRef}>
+        <div className="space-y-1">
+          <h3 className="text-2xl font-black text-dl-primary-dark tracking-tight flex items-center gap-3">
+            <Zap className="w-6 h-6 text-dl-accent" />
+            Otras Habilidades
+          </h3>
+          <p className="text-xs text-dl-muted font-bold uppercase tracking-widest pl-9">Ofimática, programas, idiomas y habilidades interpersonales</p>
+        </div>
+        
+        <div className="space-y-4">
+          <div className="relative">
+            <input
+              type="text"
+              value={habInput}
+              onChange={(e) => setHabInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addHabilidad(habInput); }}}
+              className="w-full px-6 py-4 font-bold bg-white rounded-2xl border-2 border-dl-primary-light/30 focus:border-dl-accent outline-none shadow-sm"
+              placeholder="Ej: Excel Avanzado, Inglés, Canva..."
+            />
+            {habInput.length > 0 && filteredHabSug.length > 0 && (
+              <div className="absolute z-50 left-0 right-0 mt-2 bg-white rounded-2xl border-2 border-dl-primary-light/20 shadow-xl max-h-52 overflow-y-auto">
+                {filteredHabSug.map(s => (
+                  <button key={s} type="button" onClick={() => addHabilidad(s)} className="w-full text-left px-6 py-3 hover:bg-dl-primary-bg font-bold text-sm text-dl-primary-dark border-b last:border-0 border-dl-primary-light/10">{s}</button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {(selectedHabilidades || []).map((h: string) => (
+              <div key={h} className="flex items-center gap-2 bg-dl-primary-bg text-dl-primary-dark border-2 border-dl-primary-light/20 px-4 py-2 rounded-xl animate-in zoom-in-95">
+                <span className="text-xs font-black uppercase">{h}</span>
+                <button type="button" onClick={() => removeHabilidad(h)} className="hover:text-red-400 transition-colors"><X className="w-3 h-3" /></button>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

@@ -12,10 +12,8 @@ export async function saveResumeAction(formData: any) {
   const session = await auth();
   if (!session.userId) throw new Error("Unauthorized");
 
-  // Asegurar que el usuario existe en Turso antes de guardar CV
   await syncClerkUserWithDb();
 
-  // Buscar si el usuario ya tiene un CV guardado
   const existingRecords = await db.query.resumes.findMany({
     where: or(
       eq(resumes.userId, session.userId),
@@ -43,7 +41,7 @@ export async function saveResumeAction(formData: any) {
   if (formData.provincia && formData.nivelEducativo?.length > 0 && formData.disponibilidad) score += 15;
   if (formData.materias?.length >= 1) score += 5;
   if (formData.resumen?.length > 20) score += 5;
-  if (!formData.isAutosave) score += 5; // Perfil publicado
+  if (!formData.isAutosave) score += 5; 
 
   const isVerified = score >= 100;
 
@@ -68,6 +66,14 @@ export async function saveResumeAction(formData: any) {
         nivelEducativo: formData.nivelEducativo || [],
         materias: formData.materias || [],
         resumen: formData.resumen || "",
+        mostrarResumenPublico: formData.mostrarResumenPublico ?? true,
+        mostrarNivelesPublico: formData.mostrarNivelesPublico ?? true,
+        localidades: formData.localidades || [],
+        habilidades: formData.habilidades || [],
+        turnos: formData.turnos || [],
+        diasDisponibles: formData.diasDisponibles || [],
+        disponibleDesde: formData.disponibleDesde || null,
+        mostrarTelPublico: formData.mostrarTelPublico ?? false, // Guardamos flag de privacidad
         tipoEmpleo: formData.tipoEmpleo || [],
         provincia: formData.provincia,
         localidad: formData.localidad,
