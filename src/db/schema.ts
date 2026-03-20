@@ -107,4 +107,5 @@ export interface DocenteMeta {
   completionScore:   number;
   isVerified:        boolean;
   parsedFromPdf:     boolean;
+  cursos?:           Array<{ nombre?: string; institucion?: string }>;
 }

@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 const model = genAI.getGenerativeModel({
-  model: 'gemini-2.5-flash',
+  model: 'gemini-1.5-flash',
 })
 
 const ParsedCVSchema = z.object({
@@ -25,28 +25,31 @@ const ParsedCVSchema = z.object({
     institucion: z.string().optional().nullable().default(""),
     anio:        z.union([z.string(), z.number()]).transform(val => String(val)).optional().nullable(),
   })).default([]),
+  cursos: z.array(z.object({
+    nombre:      z.string().optional().nullable().default(""),
+    institucion: z.string().optional().nullable().default(""),
+  })).default([]),
 })
 
 const PROMPT = `Sos un asistente veloz especializado en extraer información de currículums.
 Analizá si el texto corresponde a un perfil docente o educacional (campo "es_cv_docente"). Si no lo es, dejá un aviso en "observaciones".
-IMPORTANTE: NO REESCRIBAS NI ADAPTES LA INFORMACIÓN. Extraé los datos EXACTAMENTE como aparecen en el texto original, sin importar el rubro (IT, Marketing, etc). 
+IMPORTANTE: NO REESCRIBAS NI ADAPTES LA INFORMACIÓN. Extraé los datos EXACTAMENTE como aparecen en el texto original.
 Mapea la información estrictamente con estos nombres de llaves JSON:
-- Extraé siempre los datos personales: "nombre", "email", y "telefono". No los dejes vacíos si existen en el texto.
-- "experiencia": Array donde mapearás la "Empresa" al campo "institucion" (usá el nombre literal de la empresa), el "Puesto" al campo "cargo" (USÁ EL TÍTULO LITERAL DEL PUESTO, NO LO CAMBIES), la fecha de inicio al campo "desde" y la de fin al campo "hasta". Extraé también todo el detalle de tareas/responsabilidades en el campo "descripcion" TAL CUAL aparezcan.
-- "formacion": Array para estudios universitarios/cursos. Cada objeto DEBE tener las llaves "institucion", "titulo" y "anio" (NO uses "educacion" ni "fecha_obtencion").
+- "nombre", "email", y "telefono": Datos personales.
+- "experiencia": Array (institucion, cargo, desde, hasta, descripcion).
+- "formacion": SOLO formación académica formal (Universitaria, Terciaria, Profesorados que otorguen TÍTULO). Cada objeto DEBE tener "institucion", "titulo" y "anio". Si no tiene año o es un curso corto, NO lo pongas acá.
+- "cursos": Cursos, talleres, diplomaturas o certificaciones complementarias. Mapeá a "nombre" e "institucion".
 Devolvé ÚNICAMENTE un JSON válido. NO inventes datos ni parafrasees. Usá null en lugar de omitir campos.
-
-Texto del CV:\n`
+`
 
 export async function POST(req: Request) {
   try {
     const { text } = await req.json()
     
-    const result = await model.generateContent(PROMPT + text)
+    const result = await model.generateContent(PROMPT + "Texto del CV:\n" + text)
     const rawResponse = result.response.text();
     console.log("Respuesta raw de Gemini:", rawResponse);
 
-    // Limpiamos la respuesta y extraemos lo que parece un JSON si hay basura alrededor
     const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       console.error("No se encontró JSON en la respuesta de Gemini");

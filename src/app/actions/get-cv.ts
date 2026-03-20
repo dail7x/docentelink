@@ -34,5 +34,6 @@ export async function getResumeAction() {
     experiencia: jr.work || [],
     formacion: jr.education || [],
     imagen: jr.basics?.image || "",
+    cursos: meta.cursos || [],
   };
 }

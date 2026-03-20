@@ -72,6 +72,7 @@ export async function saveResumeAction(formData: any) {
         completionScore: score,
         isVerified: false,
         parsedFromPdf: formData.parsedFromPdf || false,
+        cursos: formData.cursos || [],
       }
     }
   };
