@@ -3,7 +3,8 @@
 import React from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { Button } from '@/components/ui/Button';
-import { Briefcase, GraduationCap, Plus, Trash2, Calendar, ArrowRight } from 'lucide-react';
+import { Briefcase, GraduationCap, Plus, Trash2, Calendar, ArrowRight, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface StepExperienceProps {
   initialData: any;
@@ -12,7 +13,7 @@ interface StepExperienceProps {
 }
 
 export const StepExperience = ({ initialData, onNext, onBack }: StepExperienceProps) => {
-  const { register, control, handleSubmit } = useForm({
+  const { register, control, handleSubmit, setValue, watch } = useForm({
     defaultValues: {
       experiencia: initialData?.experiencia || [],
       formacion: initialData?.formacion || [],
@@ -57,39 +58,104 @@ export const StepExperience = ({ initialData, onNext, onBack }: StepExperiencePr
            </Button>
         </div>
 
-        <div className="space-y-4">
-           {expFields.map((field, index) => (
-             <div key={field.id} className="p-8 rounded-[2rem] bg-white border-2 border-dl-primary-light/30 shadow-sm relative group hover:border-dl-accent/30 transition-all">
-                <button type="button" onClick={() => removeExp(index)} className="absolute top-6 right-6 p-2 text-dl-muted hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                   <Trash2 className="w-5 h-5" />
-                </button>
+        <div className="space-y-6">
+           {expFields.map((field, index) => {
+             const hastaValue = watch(`experiencia.${index}.hasta`);
+             const isActual = hastaValue === "actual" || !hastaValue || hastaValue === "";
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                   <div className="space-y-2">
-                       <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted">Institución / Colegio / Empresa</label>
-                       <input {...register(`experiencia.${index}.institucion`)} className="w-full bg-transparent text-xl font-bold outline-none border-b-2 border-dl-primary-light/20 focus:border-dl-accent transition-colors pb-2" placeholder="Ej: Escuela Normal N° 1" />
-                   </div>
-                   <div className="space-y-2">
-                       <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted">Cargo / Materia dictada</label>
-                       <input {...register(`experiencia.${index}.cargo`)} className="w-full bg-transparent text-xl font-bold outline-none border-b-2 border-dl-primary-light/20 focus:border-dl-accent transition-colors pb-2" placeholder="Ej: Profesor de Geografía" />
-                   </div>
-                   <div className="md:col-span-2 grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted italic">Desde</label>
-                        <input {...register(`experiencia.${index}.desde`)} className="w-full bg-transparent font-medium outline-none border-b border-dl-primary-light/20 focus:border-dl-accent" placeholder="Marzo 2020" />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted italic">Hasta</label>
-                        <input {...register(`experiencia.${index}.hasta`)} className="w-full bg-transparent font-medium outline-none border-b border-dl-primary-light/20 focus:border-dl-accent" placeholder="Actual o Fecha" />
-                      </div>
-                   </div>
-                   <div className="md:col-span-2 space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted">Descripción de tareas</label>
-                      <textarea {...register(`experiencia.${index}.descripcion`)} className="w-full bg-dl-primary-bg/50 p-4 rounded-xl text-sm font-medium outline-none border-2 border-transparent focus:border-dl-accent/20 min-h-[80px]" placeholder="Breve detalle de lo que hacías..." />
-                   </div>
-                </div>
-             </div>
-           ))}
+             const toggleActual = (e: React.MouseEvent) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Si ya es actual, lo limpiamos para forzar el estado false
+                if (isActual) {
+                  setValue(`experiencia.${index}.hasta`, "temporal-val-to-force-state");
+                  setTimeout(() => setValue(`experiencia.${index}.hasta`, "unset"), 0); 
+                } else {
+                  setValue(`experiencia.${index}.hasta`, "actual");
+                }
+             };
+
+             // Verificar si realmente es actual comparando contra el flag
+             const realIsActual = hastaValue === "actual" || !hastaValue || hastaValue === "";
+
+             return (
+               <div key={field.id} className="p-8 rounded-[2rem] bg-white border-2 border-dl-primary-light/30 shadow-sm relative group hover:border-dl-accent/30 transition-all">
+                  <button type="button" onClick={() => removeExp(index)} className="absolute top-6 right-6 p-2 text-dl-muted hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                     <Trash2 className="w-5 h-5" />
+                  </button>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted">Institución / Colegio / Empresa</label>
+                          <input {...register(`experiencia.${index}.institucion`)} className="w-full bg-transparent text-xl font-bold outline-none border-b-2 border-dl-primary-light/20 focus:border-dl-accent transition-colors pb-2" placeholder="Ej: Escuela Normal N° 1" />
+                     </div>
+                     <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted">Cargo / Materia dictada</label>
+                          <input {...register(`experiencia.${index}.cargo`)} className="w-full bg-transparent text-xl font-bold outline-none border-b-2 border-dl-primary-light/20 focus:border-dl-accent transition-colors pb-2" placeholder="Ej: Profesor de Geografía" />
+                     </div>
+                     
+                     <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 items-start bg-dl-primary-bg/10 p-6 rounded-2xl border-2 border-transparent transition-all">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted italic flex items-center gap-2">
+                             Desde <Calendar className="w-3.5 h-3.5 opacity-40" />
+                          </label>
+                          <input 
+                             type="month"
+                             {...register(`experiencia.${index}.desde`)} 
+                             className="w-full bg-white px-4 py-2.5 rounded-lg border-2 border-dl-primary-light/10 focus:border-dl-accent outline-none font-bold text-dl-primary-dark transition-all"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center mb-1">
+                             <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted italic flex items-center gap-2">
+                                Hasta <Calendar className="w-3.5 h-3.5 opacity-40" />
+                             </label>
+                             <button 
+                               type="button" 
+                               onClick={toggleActual}
+                               className="flex items-center gap-2 group cursor-pointer"
+                             >
+                                <div className={cn(
+                                   "w-4 h-4 rounded border-2 flex items-center justify-center transition-all",
+                                   realIsActual ? "bg-dl-accent border-dl-accent" : "border-dl-muted/30 bg-white"
+                                )}>
+                                   {realIsActual && <Check className="w-3 h-3 text-white stroke-[4]" />}
+                                </div>
+                                <span className={cn("text-[9px] font-black uppercase tracking-widest", realIsActual ? "text-dl-accent" : "text-dl-muted")}>
+                                   Trabajo Actual
+                                </span>
+                             </button>
+                          </div>
+
+                          <div className="relative">
+                             <input 
+                                type={realIsActual ? "text" : "month"}
+                                {...register(`experiencia.${index}.hasta`)} 
+                                value={realIsActual ? "Actualmente trabajando aquí" : (hastaValue || "")}
+                                onChange={(e) => {
+                                   if (!realIsActual) setValue(`experiencia.${index}.hasta`, e.target.value);
+                                }}
+                                className={cn(
+                                   "w-full px-4 py-2.5 rounded-lg border-2 outline-none font-bold transition-all",
+                                   realIsActual 
+                                     ? "bg-dl-accent/5 border-dl-accent/20 text-dl-accent/70 italic text-sm cursor-default" 
+                                     : "bg-white border-dl-primary-light/10 focus:border-dl-accent text-dl-primary-dark"
+                                )}
+                                readOnly={realIsActual}
+                             />
+                          </div>
+                        </div>
+                     </div>
+
+                     <div className="md:col-span-2 space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted">Descripción de tareas</label>
+                        <textarea {...register(`experiencia.${index}.descripcion`)} className="w-full bg-dl-primary-bg/50 p-4 rounded-xl text-sm font-medium outline-none border-2 border-transparent focus:border-dl-accent/20 min-h-[80px]" placeholder="Breve detalle de lo que hacías..." />
+                     </div>
+                  </div>
+               </div>
+             );
+           })}
         </div>
       </div>
 
@@ -126,7 +192,15 @@ export const StepExperience = ({ initialData, onNext, onBack }: StepExperiencePr
                    </div>
                    <div className="md:col-span-2">
                       <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted italic">Año de Egreso</label>
-                      <input {...register(`formacion.${index}.anio`)} className="w-32 block bg-transparent font-medium outline-none border-b border-dl-primary-light/20 focus:border-dl-accent" placeholder="2015" />
+                      <input 
+                         type="number"
+                         min="1950"
+                         max="2030"
+                         {...register(`formacion.${index}.anio`)} 
+                         className="w-40 block bg-white px-4 py-2.5 rounded-lg border-2 border-dl-primary-light/10 focus:border-dl-accent outline-none font-bold text-dl-primary-dark transition-all" 
+                         placeholder="Ej: 2015" 
+                      />
+                      <p className="text-[9px] text-dl-muted font-bold mt-2 opacity-60 italic pl-1">Deja vacío si tus estudios aún NO terminaron.</p>
                    </div>
                 </div>
              </div>
@@ -162,8 +236,8 @@ export const StepExperience = ({ initialData, onNext, onBack }: StepExperiencePr
                       <input {...register(`cursos.${index}.nombre`)} className="w-full bg-transparent font-bold outline-none border-b-2 border-dl-primary-light/20 focus:border-dl-accent transition-colors pb-2" placeholder="Ej: Introducción a la Robótica" />
                    </div>
                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted">Institución / Dictado por</label>
-                      <input {...register(`cursos.${index}.institucion`)} className="w-full bg-transparent font-black outline-none border-b-2 border-dl-primary-light/20 focus:border-dl-accent transition-colors pb-2 text-dl-muted/70" placeholder="Ej: Coursera / Google" />
+                       <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted">Institución / Dictado por</label>
+                       <input {...register(`cursos.${index}.institucion`)} className="w-full bg-transparent font-black outline-none border-b-2 border-dl-primary-light/20 focus:border-dl-accent transition-colors pb-2 text-dl-muted/70" placeholder="Ej: Coursera / Google" />
                    </div>
                 </div>
              </div>

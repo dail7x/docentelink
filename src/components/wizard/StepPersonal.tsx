@@ -1,244 +1,246 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/Button';
+import { User, Mail, Phone, CheckCircle2, AlertCircle, Loader2, ArrowRight, Globe } from 'lucide-react';
+import { checkSlugAction } from '@/app/actions/check-slug';
 import { PhotoEditor } from './PhotoEditor';
-import { User, Mail, Phone, CheckCircle2, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
+import { uploadFiles } from '@/lib/uploadthing';
 
-const formSchema = z.object({
-  nombre: z.string()
-    .min(3, "El nombre debe tener al menos 3 caracteres")
-    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, "El nombre solo puede contener letras"),
-  email: z.string().email("Correo electrónico inválido"),
-  telefono: z.string()
-    .min(8, "El teléfono es demasiado corto")
-    .max(15, "El teléfono es demasiado largo")
-    .regex(/^[0-9+\s-]+$/, "Solo números y símbolos (+ -)"),
+const personalSchema = z.object({
+  nombre: z.string().min(2, "El nombre es muy corto"),
+  apellido: z.string().min(2, "El apellido es muy corto"),
+  email: z.string().email("Email inválido"),
+  telefono: z.string().min(8, "Teléfono inválido"),
   slug: z.string()
-    .min(3, "El link debe tener al menos 3 caracteres")
+    .min(3, "Mínimo 3 caracteres")
     .regex(/^[a-z0-9-]+$/, "Solo minúsculas, números y guiones"),
+  photoUrl: z.string().optional(),
 });
-
-type FormValues = z.infer<typeof formSchema>;
 
 interface StepPersonalProps {
   initialData: any;
   onNext: (data: any) => void;
 }
 
-// Función para CamelCase (Primera letra mayúscula de cada palabra)
-const toCamelCase = (str: string) => {
-  return str
-    .toLowerCase()
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-};
-
 export const StepPersonal = ({ initialData, onNext }: StepPersonalProps) => {
-  const [isValidatingSlug, setIsValidatingSlug] = useState(false);
+  const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+  const [isUploading, setIsUploading] = useState(false);
 
-  const { register, handleSubmit, watch, setValue, formState: { errors, isValid } } = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    mode: "onChange",
+  const generateSuggestedSlug = (nombre: string, apellido: string) => {
+    const clean = (str: string) => str?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "") || "";
+    const n = clean(nombre);
+    const a = clean(apellido);
+    const randomSuffix = Math.random().toString(36).substring(2, 5);
+    return `${n}-${a}-${randomSuffix}`.replace(/-+$/, "");
+  };
+
+  const splitName = (fullName: string) => {
+    if (!fullName) return { nombre: "", apellido: "" };
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length === 1) return { nombre: parts[0], apellido: "" };
+    const apellido = parts.pop() || "";
+    const nombre = parts.join(" ");
+    return { nombre, apellido };
+  };
+
+  const nameData = splitName(initialData?.nombre);
+  
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
+    resolver: zodResolver(personalSchema),
     defaultValues: {
-      nombre: initialData?.nombre ? toCamelCase(initialData.nombre) : "",
+      nombre: initialData?.name || nameData.nombre,
+      apellido: initialData?.surname || nameData.apellido,
       email: initialData?.email || "",
       telefono: initialData?.telefono || "",
-      slug: initialData?.slug || initialData?.nombre?.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-') || "",
+      slug: initialData?.slug || "",
+      photoUrl: initialData?.photoUrl || "",
     },
+    mode: "onBlur"
   });
 
-  const slugValue = watch('slug');
-  const nombreValue = watch('nombre');
-  const telefonoValue = watch('telefono');
+  const slugValue = watch("slug");
+  const currentNombre = watch("nombre");
+  const currentApellido = watch("apellido");
+  const photoUrl = watch("photoUrl");
 
-  // Formateo de Nombre en tiempo real (Camel Case)
-  useEffect(() => {
-    if (nombreValue) {
-      // Solo aplicamos si hay cambios manuales o del parser para limpiar números/símbolos
-      const cleaned = nombreValue.replace(/[0-9]/g, '');
-      if (cleaned !== nombreValue) {
-        setValue('nombre', cleaned);
+  const validateSlug = useCallback(async (val: string) => {
+    if (val && val.length >= 3) {
+      setSlugStatus('checking');
+      try {
+        const { available } = await checkSlugAction(val);
+        setSlugStatus(available ? 'available' : 'taken');
+      } catch (err) {
+        console.error("Error validando slug:", err);
+        setSlugStatus('idle');
       }
     }
-  }, [nombreValue, setValue]);
+  }, []);
 
-  // Formateo de Teléfono (Solo números y símbolos)
   useEffect(() => {
-    if (telefonoValue) {
-      const cleaned = telefonoValue.replace(/[^0-9+\s-]/g, '');
-      if (cleaned !== telefonoValue) {
-        setValue('telefono', cleaned);
-      }
+    if (!initialData?.slug && currentNombre && currentApellido) {
+      const suggested = generateSuggestedSlug(currentNombre, currentApellido);
+      setValue("slug", suggested, { shouldValidate: true });
+      validateSlug(suggested);
+    } else if (initialData?.slug) {
+      validateSlug(initialData.slug);
     }
-  }, [telefonoValue, setValue]);
+  }, []); 
 
-  // Formateo de Slug (Solo permitidos en tiempo real)
-  useEffect(() => {
-    if (slugValue) {
-      const cleaned = slugValue
-        .toLowerCase()
-        .replace(/[^a-z0-9-]/g, '-') // Reemplaza no permitidos por guion
-        .replace(/-+/g, '-');         // Evita guiones dobles
-      
-      if (cleaned !== slugValue) {
-        setValue('slug', cleaned);
-      }
-    }
-  }, [slugValue, setValue]);
-
-  const onSubmit = (data: FormValues) => {
-    // Aseguramos CamelCase definitivo al enviar
-    const finalData = {
+  const onSubmit = (data: any) => {
+    if (slugStatus === 'taken' || slugStatus === 'checking') return;
+    onNext({
       ...data,
-      nombre: toCamelCase(data.nombre),
-      photoUrl: initialData?.imagen 
-    };
-    onNext(finalData);
+      nombre: `${data.nombre} ${data.apellido}`.trim()
+    });
   };
 
-  const handlePhotoProcessed = (file: File) => {
-    initialData.photoFile = file;
+  const handlePhotoProcessed = async (file: File) => {
+    setIsUploading(true);
+    try {
+      // FIX: Use the correct endpoint name from uploadthing core.ts
+      const res = await uploadFiles("profileImage", { files: [file] });
+      if (res?.[0]?.url) {
+        setValue("photoUrl", res[0].url, { shouldValidate: true });
+      }
+    } catch (error) {
+      console.error("Error uploading photo:", error);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
-  const hasSlugError = !!errors.slug;
-  const isSlugValidating = slugValue && slugValue.length >= 3 && !hasSlugError;
+  const formatText = (val: string) => {
+    const clean = val.replace(/[0-9\.]/g, "");
+    return clean.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+  };
+
+  const handleNombreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setValue("nombre", formatText(e.target.value), { shouldValidate: true });
+  };
+
+  const handleApellidoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setValue("apellido", formatText(e.target.value), { shouldValidate: true });
+  };
+
+  const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/\./g, "-").replace(/[^a-z0-9-]/g, "");
+    setValue("slug", val, { shouldValidate: true });
+    if (slugStatus !== 'idle') setSlugStatus('idle');
+  };
+
+  const inputClasses = "w-full bg-white border-2 border-dl-primary-light/20 focus:border-dl-accent rounded-2xl py-3 pl-12 pr-4 text-md font-bold outline-none transition-all shadow-sm focus:shadow-md focus:border-dl-accent";
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex flex-col md:flex-row gap-10 items-start">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-700">
+      
+      <div className="flex flex-col lg:flex-row gap-8 items-start">
         
-        {/* Lado Izquierdo: La Foto */}
-        <div className="w-full md:w-auto flex-shrink-0">
+        {/* Foto */}
+        <div className="w-full lg:w-fit flex flex-col items-center shrink-0">
           <PhotoEditor 
-            onPhotoProcessed={handlePhotoProcessed} 
-            initialImageUrl={initialData?.imagen}
+            onPhotoProcessed={handlePhotoProcessed}
+            initialImageUrl={photoUrl}
           />
+          {isUploading && (
+            <div className="mt-2 flex items-center gap-2 text-dl-accent animate-pulse">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-[10px] font-black uppercase tracking-widest">Subiendo...</span>
+            </div>
+          )}
         </div>
 
-        {/* Lado Derecho: Campos */}
-        <form onSubmit={handleSubmit(onSubmit)} className="flex-1 w-full space-y-6">
-           <div className="space-y-6">
-              {/* Nombre */}
-              <div className="space-y-1.5">
-                 <label className="text-[10px] font-black text-dl-primary-dark uppercase tracking-[0.2em] opacity-70">
-                    Nombre Completo
-                 </label>
-                 <div className="relative group">
-                    <User className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-dl-primary/40" />
-                    <input 
-                      {...register('nombre')}
-                      onBlur={(e) => setValue('nombre', toCamelCase(e.target.value))}
-                      className="w-full p-4 pl-14 text-base font-bold bg-white rounded-2xl border-2 border-dl-primary-light/20 focus:border-dl-accent focus:ring-0 transition-all outline-none"
-                      placeholder="Ej: Marcelo García"
-                    />
-                    {errors.nombre && (
-                      <div className="flex items-center gap-1 text-red-500 text-[10px] font-bold mt-1 animate-in slide-in-from-top-1">
-                        <AlertCircle className="w-3 h-3" />
-                        {errors.nombre.message}
-                      </div>
-                    )}
-                 </div>
-              </div>
+        {/* Datos */}
+        <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted pl-2">Nombre</label>
+            <div className="relative group">
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-dl-muted group-focus-within:text-dl-accent transition-colors" />
+              <input {...register("nombre")} onChange={handleNombreChange} className={inputClasses} placeholder="Nombre" />
+            </div>
+            {errors.nombre && <p className="text-[10px] text-red-500 font-bold pl-2">{errors.nombre.message}</p>}
+          </div>
 
-              {/* Email */}
-              <div className="space-y-1.5">
-                 <label className="text-[10px] font-black text-dl-primary-dark uppercase tracking-[0.2em] opacity-70">
-                    Correo de Contacto
-                 </label>
-                 <div className="relative group">
-                    <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-dl-primary/40" />
-                    <input 
-                      {...register('email')}
-                      className="w-full p-4 pl-14 text-base font-bold bg-white rounded-2xl border-2 border-dl-primary-light/20 focus:border-dl-accent focus:ring-0 transition-all outline-none"
-                      placeholder="correo@ejemplo.com"
-                    />
-                    {errors.email && (
-                      <div className="flex items-center gap-1 text-red-500 text-[10px] font-bold mt-1 animate-in slide-in-from-top-1">
-                        <AlertCircle className="w-3 h-3" />
-                        {errors.email.message}
-                      </div>
-                    )}
-                 </div>
-              </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted pl-2">Apellido</label>
+            <div className="relative group">
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-dl-muted group-focus-within:text-dl-accent transition-colors" />
+              <input {...register("apellido")} onChange={handleApellidoChange} className={inputClasses} placeholder="Apellido" />
+            </div>
+          </div>
 
-              {/* WhatsApp */}
-              <div className="space-y-1.5">
-                 <label className="text-[10px] font-black text-dl-primary-dark uppercase tracking-[0.2em] opacity-70">
-                    WhatsApp / Teléfono
-                 </label>
-                 <div className="relative group">
-                    <Phone className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-dl-primary/40" />
-                    <input 
-                      {...register('telefono')}
-                      className="w-full p-4 pl-14 text-base font-bold bg-white rounded-2xl border-2 border-dl-primary-light/20 focus:border-dl-accent focus:ring-0 transition-all outline-none"
-                      placeholder="+54 9 11 ..."
-                    />
-                    {errors.telefono && (
-                      <div className="flex items-center gap-1 text-red-500 text-[10px] font-bold mt-1 animate-in slide-in-from-top-1">
-                        <AlertCircle className="w-3 h-3" />
-                        {errors.telefono.message}
-                      </div>
-                    )}
-                 </div>
-              </div>
-           </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted pl-2">Correo Electrónico</label>
+            <div className="relative group">
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-dl-muted group-focus-within:text-dl-accent transition-colors" />
+              <input {...register("email")} className={inputClasses} placeholder="Email" />
+            </div>
+          </div>
 
-           {/* Fila del Slug - Integrado */}
-           <div className="pt-4 space-y-4">
-              <div className="flex items-center justify-between">
-                 <label className="text-[10px] font-black text-dl-primary-dark uppercase tracking-[0.2em] opacity-70">
-                    Tu Link Único (Slug)
-                 </label>
-                 
-                 {isSlugValidating ? (
-                    <div className="flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-600 rounded-full text-[10px] font-bold border border-green-200 animate-in zoom-in duration-300">
-                       <CheckCircle2 className="w-3 h-3" />
-                       Disponible
-                    </div>
-                 ) : slugValue?.length > 0 ? (
-                    <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-[10px] font-bold border border-amber-200">
-                       <Loader2 className="w-3 h-3 animate-spin" />
-                       Validando...
-                    </div>
-                 ) : null}
-              </div>
-
-              <div className="relative flex items-center p-1 bg-white/50 backdrop-blur-sm border-2 border-dl-primary-light/20 rounded-[1.5rem] group focus-within:border-dl-accent/40 focus-within:ring-4 focus-within:ring-dl-accent/5 transition-all outline-none">
-                 <div className="px-6 py-4 bg-dl-primary-bg/80 rounded-[1.2rem] border-r border-dl-primary-light/10 text-dl-primary-dark/60 font-medium text-lg shrink-0">
-                    docentelink.ar/cv/
-                 </div>
-                 <input 
-                    {...register('slug')}
-                    className="flex-1 px-4 py-4 text-xl font-bold bg-transparent text-dl-primary-dark placeholder:text-dl-primary/20 outline-none focus:ring-0"
-                    placeholder="paula-m-ruiz"
-                 />
-              </div>
-              
-              {errors.slug ? (
-                <div className="flex items-center gap-1 text-red-500 text-[10px] font-bold pl-2 animate-in slide-in-from-top-1">
-                  <AlertCircle className="w-3 h-3" />
-                  {errors.slug.message}
-                </div>
-              ) : (
-                <p className="text-[10px] text-dl-muted font-bold uppercase tracking-widest pl-2 opacity-50">
-                   Reglas: Solo minúsculas, números y guiones.
-                </p>
-              )}
-           </div>
-
-           <div className="flex justify-end pt-8">
-              <Button type="submit" variant="primary" size="lg" className="px-16 font-black shadow-xl group">
-                 Siguiente: Experiencia & Formación
-                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-           </div>
-        </form>
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted pl-2">Teléfono / WhatsApp</label>
+            <div className="relative group">
+              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-dl-muted group-focus-within:text-dl-accent transition-colors" />
+              <input {...register("telefono")} className={inputClasses} placeholder="Teléfono" />
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+
+      {/* Slug centrado y resaltado */}
+      <div className="pt-4 border-t-2 border-dl-primary-light/5 flex flex-col items-center">
+        <div className="w-full max-w-xl space-y-2">
+          <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted pl-2 block text-center sm:text-left">TU LINK ÚNICO (PERFIL)</label>
+          
+          {/* Link Preview (Visible en Mobile) */}
+          <div className="sm:hidden flex items-center gap-2 px-2 pb-1 text-[10px] text-dl-muted font-bold truncate">
+            <Globe className="w-3 h-3 text-dl-accent shrink-0" />
+            <span>docentelink.ar/cv/{slugValue || "..."}</span>
+          </div>
+
+          <div className={`
+            relative flex items-center bg-white border-2 rounded-2xl px-6 py-3 transition-all duration-300
+            ${slugStatus === 'available' ? 'border-green-500 bg-green-50/20 shadow-lg shadow-green-500/5' : 
+              slugStatus === 'taken' ? 'border-red-500 bg-red-50/20 shadow-lg shadow-red-500/5' : 
+              'border-dl-primary-light/30 focus-within:border-dl-accent focus-within:shadow-xl'}
+          `}>
+            <span className="text-dl-muted font-bold text-xs hidden sm:inline select-none opacity-50 mr-1">docentelink.ar/cv/</span>
+            <input 
+              {...register("slug")}
+              onChange={handleSlugChange}
+              onBlur={(e) => validateSlug(e.target.value)}
+              className="flex-1 bg-transparent text-md font-bold outline-none placeholder:font-normal" 
+              placeholder="usuario"
+            />
+            <div className="flex items-center gap-2">
+              {slugStatus === 'checking' && <Loader2 className="w-5 h-5 text-dl-accent animate-spin" />}
+              {slugStatus === 'available' && <CheckCircle2 className="w-5 h-5 text-green-500" />}
+              {slugStatus === 'taken' && <AlertCircle className="w-5 h-5 text-red-500" />}
+            </div>
+          </div>
+          <div className="flex justify-between px-2 mt-1">
+             <p className="text-[9px] text-dl-muted font-bold italic uppercase tracking-tighter">Minúsculas, números y guiones.</p>
+             {slugStatus === 'available' && <span className="text-[9px] text-green-600 font-black uppercase tracking-widest animate-pulse">¡DISPONIBLE!</span>}
+             {slugStatus === 'taken' && <span className="text-[9px] text-red-600 font-black uppercase tracking-widest">Ya está ocupado</span>}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end pt-4">
+         <Button 
+            type="submit" 
+            variant="primary" 
+            size="lg" 
+            className="px-12 font-black shadow-lg disabled:opacity-50"
+            disabled={slugStatus === 'taken' || slugStatus === 'checking' || isUploading}
+         >
+            Siguiente
+            <ArrowRight className="ml-2 w-4 h-4" />
+         </Button>
+      </div>
+    </form>
   );
 };

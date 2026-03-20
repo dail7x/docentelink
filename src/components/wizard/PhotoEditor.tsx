@@ -20,18 +20,15 @@ export const PhotoEditor = ({ onPhotoProcessed, initialImageUrl }: PhotoEditorPr
     try {
       setIsProcessing(true);
       
-      // 1. Remove background with AI (browser-side)
       const blob = await removeBackground(file, {
         progress: (status: string, progress: number) => {
            console.log("Background removal progress:", status, progress);
         }
       });
 
-      // 2. Convert result to URL for preview
       const processedUrl = URL.createObjectURL(blob);
       setPhoto(processedUrl);
       
-      // 3. Return the file for upload via Uploadthing
       const processedFile = new File([blob], 'avatar.png', { type: 'image/png' });
       onPhotoProcessed(processedFile);
       
@@ -48,10 +45,15 @@ export const PhotoEditor = ({ onPhotoProcessed, initialImageUrl }: PhotoEditorPr
     if (file) processImage(file);
   };
 
+  const handleButtonClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    fileInputRef.current?.click();
+  };
+
   return (
     <div className="flex flex-col items-center space-y-6">
       <div className="relative group overflow-hidden">
-         {/* El Frame Editorial (Violeta Profundo) */}
          <div className="w-48 h-48 rounded-[3.5rem] bg-dl-primary-bg border-4 border-dl-primary-light flex items-center justify-center relative overflow-hidden shadow-inner group-hover:border-dl-accent/40 transition-all duration-500">
             {photo ? (
               <img src={photo} alt="Vista previa" className="w-full h-full object-cover transition-all duration-700 animate-in fade-in" />
@@ -73,7 +75,6 @@ export const PhotoEditor = ({ onPhotoProcessed, initialImageUrl }: PhotoEditorPr
             )}
          </div>
 
-         {/* Animación Editorial Sparkle */}
          <div className="absolute -top-4 -right-4 w-12 h-12 text-dl-accent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none">
             <Sparkles className="w-full h-full animate-pulse" />
          </div>
@@ -88,10 +89,11 @@ export const PhotoEditor = ({ onPhotoProcessed, initialImageUrl }: PhotoEditorPr
            onChange={handleFile}
          />
          <Button 
+            type="button"
             variant="outline" 
             size="sm" 
-            className="font-black rounded-full px-6"
-            onClick={() => fileInputRef.current?.click()}
+            className="font-black rounded-full px-6 relative z-10"
+            onClick={handleButtonClick}
             disabled={isProcessing}
          >
             {photo ? (
