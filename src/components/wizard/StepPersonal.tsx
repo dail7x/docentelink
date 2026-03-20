@@ -1,18 +1,25 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/Button';
 import { PhotoEditor } from './PhotoEditor';
-import { User, Mail, Phone, AtSign, CheckCircle2, ArrowRight } from 'lucide-react';
+import { User, Mail, Phone, CheckCircle2, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
-  nombre: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
+  nombre: z.string()
+    .min(3, "El nombre debe tener al menos 3 caracteres")
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, "El nombre solo puede contener letras"),
   email: z.string().email("Correo electrónico inválido"),
-  telefono: z.string().optional(),
-  slug: z.string().min(3, "El link debe tener al menos 3 caracteres").regex(/^[a-z0-9-]+$/, "Solo minúsculas, números y guiones"),
+  telefono: z.string()
+    .min(8, "El teléfono es demasiado corto")
+    .max(15, "El teléfono es demasiado largo")
+    .regex(/^[0-9+\s-]+$/, "Solo números y símbolos (+ -)"),
+  slug: z.string()
+    .min(3, "El link debe tener al menos 3 caracteres")
+    .regex(/^[a-z0-9-]+$/, "Solo minúsculas, números y guiones"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -22,29 +29,84 @@ interface StepPersonalProps {
   onNext: (data: any) => void;
 }
 
+// Función para CamelCase (Primera letra mayúscula de cada palabra)
+const toCamelCase = (str: string) => {
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 export const StepPersonal = ({ initialData, onNext }: StepPersonalProps) => {
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<FormValues>({
+  const [isValidatingSlug, setIsValidatingSlug] = useState(false);
+
+  const { register, handleSubmit, watch, setValue, formState: { errors, isValid } } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
+    mode: "onChange",
     defaultValues: {
-      nombre: initialData?.nombre || "",
+      nombre: initialData?.nombre ? toCamelCase(initialData.nombre) : "",
       email: initialData?.email || "",
       telefono: initialData?.telefono || "",
-      slug: initialData?.slug || initialData?.nombre?.toLowerCase().replace(/\s+/g, '-') || "",
+      slug: initialData?.slug || initialData?.nombre?.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-') || "",
     },
   });
 
-  const slug = watch('slug');
+  const slugValue = watch('slug');
+  const nombreValue = watch('nombre');
+  const telefonoValue = watch('telefono');
+
+  // Formateo de Nombre en tiempo real (Camel Case)
+  useEffect(() => {
+    if (nombreValue) {
+      // Solo aplicamos si hay cambios manuales o del parser para limpiar números/símbolos
+      const cleaned = nombreValue.replace(/[0-9]/g, '');
+      if (cleaned !== nombreValue) {
+        setValue('nombre', cleaned);
+      }
+    }
+  }, [nombreValue, setValue]);
+
+  // Formateo de Teléfono (Solo números y símbolos)
+  useEffect(() => {
+    if (telefonoValue) {
+      const cleaned = telefonoValue.replace(/[^0-9+\s-]/g, '');
+      if (cleaned !== telefonoValue) {
+        setValue('telefono', cleaned);
+      }
+    }
+  }, [telefonoValue, setValue]);
+
+  // Formateo de Slug (Solo permitidos en tiempo real)
+  useEffect(() => {
+    if (slugValue) {
+      const cleaned = slugValue
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, '-') // Reemplaza no permitidos por guion
+        .replace(/-+/g, '-');         // Evita guiones dobles
+      
+      if (cleaned !== slugValue) {
+        setValue('slug', cleaned);
+      }
+    }
+  }, [slugValue, setValue]);
 
   const onSubmit = (data: FormValues) => {
-    // Si hay una foto ya guardada en la BD, la pasamos si no se cambió
-    onNext({ ...data, photoUrl: initialData?.imagen });
-    console.log("Personal Data Submitting:", data);
+    // Aseguramos CamelCase definitivo al enviar
+    const finalData = {
+      ...data,
+      nombre: toCamelCase(data.nombre),
+      photoUrl: initialData?.imagen 
+    };
+    onNext(finalData);
   };
 
   const handlePhotoProcessed = (file: File) => {
-    initialData.photoFile = file; // Para el proceso de subida en el Finish
-    console.log("Foto procesada, lista para el paso final", file);
+    initialData.photoFile = file;
   };
+
+  const hasSlugError = !!errors.slug;
+  const isSlugValidating = slugValue && slugValue.length >= 3 && !hasSlugError;
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -70,10 +132,16 @@ export const StepPersonal = ({ initialData, onNext }: StepPersonalProps) => {
                     <User className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-dl-primary/40" />
                     <input 
                       {...register('nombre')}
+                      onBlur={(e) => setValue('nombre', toCamelCase(e.target.value))}
                       className="w-full p-4 pl-14 text-base font-bold bg-white rounded-2xl border-2 border-dl-primary-light/20 focus:border-dl-accent focus:ring-0 transition-all outline-none"
-                      placeholder="Nombre Completo"
+                      placeholder="Ej: Marcelo García"
                     />
-                    {errors.nombre && <p className="text-red-500 text-[10px] font-bold mt-1">{errors.nombre.message}</p>}
+                    {errors.nombre && (
+                      <div className="flex items-center gap-1 text-red-500 text-[10px] font-bold mt-1 animate-in slide-in-from-top-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {errors.nombre.message}
+                      </div>
+                    )}
                  </div>
               </div>
 
@@ -87,9 +155,14 @@ export const StepPersonal = ({ initialData, onNext }: StepPersonalProps) => {
                     <input 
                       {...register('email')}
                       className="w-full p-4 pl-14 text-base font-bold bg-white rounded-2xl border-2 border-dl-primary-light/20 focus:border-dl-accent focus:ring-0 transition-all outline-none"
-                      placeholder="Correo de Contacto"
+                      placeholder="correo@ejemplo.com"
                     />
-                    {errors.email && <p className="text-red-500 text-[10px] font-bold mt-1">{errors.email.message}</p>}
+                    {errors.email && (
+                      <div className="flex items-center gap-1 text-red-500 text-[10px] font-bold mt-1 animate-in slide-in-from-top-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {errors.email.message}
+                      </div>
+                    )}
                  </div>
               </div>
 
@@ -103,8 +176,14 @@ export const StepPersonal = ({ initialData, onNext }: StepPersonalProps) => {
                     <input 
                       {...register('telefono')}
                       className="w-full p-4 pl-14 text-base font-bold bg-white rounded-2xl border-2 border-dl-primary-light/20 focus:border-dl-accent focus:ring-0 transition-all outline-none"
-                      placeholder="WhatsApp / Teléfono"
+                      placeholder="+54 9 11 ..."
                     />
+                    {errors.telefono && (
+                      <div className="flex items-center gap-1 text-red-500 text-[10px] font-bold mt-1 animate-in slide-in-from-top-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {errors.telefono.message}
+                      </div>
+                    )}
                  </div>
               </div>
            </div>
@@ -115,10 +194,18 @@ export const StepPersonal = ({ initialData, onNext }: StepPersonalProps) => {
                  <label className="text-[10px] font-black text-dl-primary-dark uppercase tracking-[0.2em] opacity-70">
                     Tu Link Único (Slug)
                  </label>
-                 <div className="flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-600 rounded-full text-[10px] font-bold border border-green-200">
-                    <CheckCircle2 className="w-3 h-3" />
-                    Disponible
-                 </div>
+                 
+                 {isSlugValidating ? (
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-600 rounded-full text-[10px] font-bold border border-green-200 animate-in zoom-in duration-300">
+                       <CheckCircle2 className="w-3 h-3" />
+                       Disponible
+                    </div>
+                 ) : slugValue?.length > 0 ? (
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-[10px] font-bold border border-amber-200">
+                       <Loader2 className="w-3 h-3 animate-spin" />
+                       Validando...
+                    </div>
+                 ) : null}
               </div>
 
               <div className="relative flex items-center p-1 bg-white/50 backdrop-blur-sm border-2 border-dl-primary-light/20 rounded-[1.5rem] group focus-within:border-dl-accent/40 focus-within:ring-4 focus-within:ring-dl-accent/5 transition-all outline-none">
@@ -128,13 +215,20 @@ export const StepPersonal = ({ initialData, onNext }: StepPersonalProps) => {
                  <input 
                     {...register('slug')}
                     className="flex-1 px-4 py-4 text-xl font-bold bg-transparent text-dl-primary-dark placeholder:text-dl-primary/20 outline-none focus:ring-0"
-                    placeholder="username"
+                    placeholder="paula-m-ruiz"
                  />
               </div>
-              {errors.slug && <p className="text-red-500 text-[10px] font-bold mt-1">{errors.slug.message}</p>}
-              <p className="text-[10px] text-dl-muted font-bold uppercase tracking-widest pl-2 opacity-50">
-                 Crea tu enlace personalizado para compartir en redes y CVs.
-              </p>
+              
+              {errors.slug ? (
+                <div className="flex items-center gap-1 text-red-500 text-[10px] font-bold pl-2 animate-in slide-in-from-top-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {errors.slug.message}
+                </div>
+              ) : (
+                <p className="text-[10px] text-dl-muted font-bold uppercase tracking-widest pl-2 opacity-50">
+                   Reglas: Solo minúsculas, números y guiones.
+                </p>
+              )}
            </div>
 
            <div className="flex justify-end pt-8">
