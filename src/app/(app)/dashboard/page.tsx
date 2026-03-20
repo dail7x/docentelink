@@ -1,3 +1,6 @@
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { syncClerkUserWithDb } from "@/lib/user";
 import { Button } from "@/components/ui/Button";
 import { Plus, Share2, Award, Zap, ExternalLink, Edit3, Eye, FileText } from "lucide-react";
