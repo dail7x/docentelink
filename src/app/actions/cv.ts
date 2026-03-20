@@ -110,5 +110,7 @@ export async function saveResumeAction(formData: any) {
     throw new Error(msg);
   }
 
-  redirect(`/dashboard?status=success`);
+  if (!formData.isAutosave) {
+    redirect(`/dashboard?status=success`);
+  }
 }

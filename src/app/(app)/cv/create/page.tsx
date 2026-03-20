@@ -46,8 +46,19 @@ export default function CreateCvPage() {
     setFormData(prev => ({ ...prev, ...data }));
   };
 
-  const handleNextStep = (stepData: any) => {
-    setFormData(prev => ({ ...prev, ...stepData }));
+  const handleNextStep = async (stepData: any) => {
+    const updatedData = { ...formData, ...stepData };
+    setFormData(updatedData);
+    
+    // Autosave: Guardamos el progreso en la BD silenciosamente
+    try {
+      // No bloqueamos el UI con isSubmitting aquí, es un guardado en segundo plano
+      saveResumeAction({ ...updatedData, isAutosave: true }); 
+      console.log("Autosave step success");
+    } catch (e) {
+      console.warn("Autosave falló, pero continuamos:", e);
+    }
+
     setCurrentStep(prev => prev + 1);
   };
 
