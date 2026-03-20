@@ -5,8 +5,8 @@ Este documento centraliza las decisiones técnicas, configuraciones críticas y 
 ## 🤖 Inteligencia Artificial (Gemini)
 
 ### Configuración del Modelo
-*   **Modelo Actual**: `gemini-2.5-flash`
-*   **Razón**: Es el modelo que ha demostrado mayor estabilidad y compatibilidad con el endpoint `v1beta` y la cuota del proyecto. **NO cambiar a otras versiones** (Flash 1.5, Flash 8b, Pro) sin validación previa, ya que reportan errores 404 o límites de cuota (Quota 0).
+*   **Modelo Actual**: `gemini-1.5-flash-latest`
+*   **Razón**: Ofrece el límite más alto en el tier gratuito (~1500 consultas por día) con excelente velocidad. Los modelos 2.x (2.0 y 2.5) actualmente tienen cuotas muy restrictivas (20 consultas por día) en el entorno libre. **NO cambiar** sin validar los límites de cuota vigentes.
 
 ### Reglas de Extracción (Parser)
 *   **Literalidad**: El prompt debe exigir estrictamente la extracción literal de datos. No permitir que la IA "adapte" puestos de otros rubros (ej. IT) al entorno docente.
