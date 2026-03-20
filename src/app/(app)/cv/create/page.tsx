@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { PdfUploader } from '@/components/parser/PdfUploader';
 import { Button } from '@/components/ui/Button';
-import { Sparkles, User, GraduationCap, Briefcase, ArrowLeft as ArrowLeftIcon } from 'lucide-react';
+import { Sparkles, User, GraduationCap, Briefcase, ArrowLeft as ArrowLeftIcon, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { StepPersonal } from '@/components/wizard/StepPersonal';
@@ -13,10 +13,12 @@ import { StepExperience } from '@/components/wizard/StepExperience';
 import { StepIdentity } from '@/components/wizard/StepIdentity';
 import { saveResumeAction } from '@/app/actions/cv';
 import { getResumeAction } from '@/app/actions/get-cv';
-import { Loader2 } from 'lucide-react';
-import { uploadFiles } from '@/lib/uploadthing';
 
-export default function CreateCvPage() {
+/* 
+  Next.js Build Fix: useSearchParams must be used within a Suspense boundary 
+  when doing static generation or client-side navigation that can bail out to CSR.
+*/
+function CreateCvContent() {
   const searchParams = useSearchParams();
   const isEditMode = searchParams.get('edit') === 'true';
   const [currentStep, setCurrentStep] = useState(0); 
@@ -100,7 +102,6 @@ export default function CreateCvPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Step Indicator - Positioned below Navbar (Navbar is fixed, height 20 so 5rem) */}
       <div className="fixed top-20 left-0 right-0 z-40 bg-white border-b border-dl-primary-light/10 px-6 py-4 shadow-sm">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -140,7 +141,6 @@ export default function CreateCvPage() {
         </div>
       </div>
 
-      {/* Main Content Area - Padding top to account for Navbar (20) + Sticky Step (16) */}
       <div className={cn(
         "max-w-6xl mx-auto px-6 pt-40 pb-20 space-y-16"
       )}>
@@ -229,5 +229,17 @@ export default function CreateCvPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function CreateCvPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-12 h-12 text-dl-accent animate-spin" />
+      </div>
+    }>
+      <CreateCvContent />
+    </Suspense>
   );
 }
