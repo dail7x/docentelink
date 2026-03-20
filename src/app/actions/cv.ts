@@ -23,8 +23,8 @@ export async function saveResumeAction(formData: any) {
     ),
   });
 
-  const userResume = existingRecords.find(r => r.userId === session.userId);
-  const slugTakenBySomeoneElse = existingRecords.find(r => r.username === formData.slug && r.userId !== session.userId);
+  const userResume = existingRecords.find((r: typeof resumes.$inferSelect) => r.userId === session.userId);
+  const slugTakenBySomeoneElse = existingRecords.find((r: typeof resumes.$inferSelect) => r.username === formData.slug && r.userId !== session.userId);
 
   if (slugTakenBySomeoneElse) {
     console.error(`Error: slug ${formData.slug} está ocupado por otro userId`);
