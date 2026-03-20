@@ -1,10 +1,6 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
-import { z } from 'zod'
+import { z } from 'zod';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
-const model = genAI.getGenerativeModel({
-  model: 'gemini-2.0-flash-lite',
-})
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
 const ParsedCVSchema = z.object({
   es_cv_docente: z.boolean().optional().nullable().default(true),
@@ -30,7 +26,7 @@ const ParsedCVSchema = z.object({
     nombre: z.string().optional().nullable().default(""),
     institucion: z.string().optional().nullable().default(""),
   })).default([]),
-})
+});
 
 const PROMPT = `Sos un asistente veloz especializado en extraer información de currículums de docentes.
 Analizá si el texto corresponde a un perfil docente o educacional (campo "es_cv_docente"). Si no lo es, dejá un aviso en "observaciones".
@@ -48,45 +44,54 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
    - Si NO TIENE un resumen, GENERÁ uno basado en los datos extraídos (años de experiencia, materias destacadas, títulos y logros).
    - El resumen debe estar en primera persona, ser entusiasta y profesional.
 
-MAPEO JSON:
-- "nombre", "email", "telefono": Datos personales.
-- "resumen": Perfil profesional (extraído o generado).
-- "experiencia": Array de objetos con {institucion, cargo, desde, hasta, descripcion}.
-- "formacion": {institucion, titulo, anio}.
-- "cursos": {nombre, institucion}.
-
 Devolvé ÚNICAMENTE un JSON válido. NO inventes datos excepto para el campo "resumen" si falta. Usá null en lugar de omitir campos si no encuentras datos.
-`
+`;
 
 export async function POST(req: Request) {
   try {
-    const { text } = await req.json()
+    const { text } = await req.json();
 
-    const result = await model.generateContent(PROMPT + "Texto del CV:\n" + text)
-    const rawResponse = result.response.text();
-    console.log("Respuesta raw de Gemini:", rawResponse);
-
-    const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.error("No se encontró JSON en la respuesta de Gemini");
-      throw new Error("Formato de respuesta inválido");
+    if (!OPENROUTER_API_KEY) {
+      throw new Error("OPENROUTER_API_KEY no configurada");
     }
 
-    const cleanJson = jsonMatch[0];
+    // Usamos DeepSeek Chat (v3) vía OpenRouter, que es muy económico/gratuito según créditos
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        "HTTP-Referer": "https://docentelink.ar",
+        "X-Title": "DocenteLink Parser",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "deepseek/deepseek-chat", 
+        messages: [
+          { role: "system", content: PROMPT },
+          { role: "user", content: `Texto del CV:\n${text}` }
+        ],
+        response_format: { type: "json_object" }
+      }),
+    });
 
-    try {
-      const parsed = ParsedCVSchema.parse(JSON.parse(cleanJson))
-      return Response.json({ data: parsed, success: true })
-    } catch (parseError) {
-      console.error("Error al parsear el JSON de Gemini:", parseError);
-      throw parseError;
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error("Error de OpenRouter:", data);
+      throw new Error(data.error?.message || "Error en OpenRouter");
     }
+
+    const content = data.choices[0].message.content;
+    const parsed = ParsedCVSchema.parse(JSON.parse(content));
+    
+    return Response.json({ data: parsed, success: true });
+
   } catch (error: any) {
-    console.error("Error en Gemini Parser:", error);
+    console.error("Error en Parser (DeepSeek/OpenRouter):", error);
     return Response.json({
       data: {},
       success: false,
       message: `No pudimos estructurar el CV: ${error.message || 'Error desconocido'}. Por favor, completa el formulario manualmente.`
-    })
+    });
   }
 }

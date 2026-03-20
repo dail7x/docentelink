@@ -16,24 +16,26 @@ export async function getResumeAction() {
   if (!resume) return null;
 
   // Mapeamos el jsonResume guardado de vuelta al formato que espera el Wizard (formData)
-  const jr = resume.jsonResume;
-  const meta = jr.meta.docente;
+  const jr = (resume.jsonResume as any) || {};
+  const meta = jr.meta?.docente || {};
+  const basics = jr.basics || {};
 
   return {
-    nombre: jr.basics?.name || "",
-    email: jr.basics?.email || "",
-    telefono: jr.basics?.phone || "",
+    nombre: basics.name || "",
+    email: basics.email || "",
+    telefono: basics.phone || "",
     slug: resume.username,
-    tituloHabilitante: meta.tituloHabilitante || jr.basics?.label || "",
-    provincia: meta.provincia || jr.basics?.location?.region || "",
-    localidad: meta.localidad || jr.basics?.location?.city || "",
+    tituloHabilitante: meta.tituloHabilitante || basics.label || "",
+    provincia: meta.provincia || basics.location?.region || "",
+    localidad: meta.localidad || basics.location?.city || "",
     disponibilidad: meta.disponibilidad || "inmediata",
     nivelEducativo: meta.nivelEducativo || [],
     materias: meta.materias || [],
+    resumen: meta.resumen || "", // New field
     tipoEmpleo: meta.tipoEmpleo || [],
     experiencia: jr.work || [],
     formacion: jr.education || [],
-    imagen: jr.basics?.image || "",
+    photoUrl: basics.image || "", // FIX: Changed 'imagen' to 'photoUrl' to match StepPersonal
     cursos: meta.cursos || [],
   };
 }

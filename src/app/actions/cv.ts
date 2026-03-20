@@ -12,10 +12,10 @@ export async function saveResumeAction(formData: any) {
   const session = await auth();
   if (!session.userId) throw new Error("Unauthorized");
 
-  // Asegurar que el usuario existe en Turso antes de guardar CV (FK constraint user_id)
+  // Asegurar que el usuario existe en Turso antes de guardar CV
   await syncClerkUserWithDb();
 
-  // Buscar si el usuario ya tiene un CV guardado, y también chequear si alguien más tiene el slug
+  // Buscar si el usuario ya tiene un CV guardado
   const existingRecords = await db.query.resumes.findMany({
     where: or(
       eq(resumes.userId, session.userId),
@@ -23,27 +23,29 @@ export async function saveResumeAction(formData: any) {
     ),
   });
 
-  const userResume = existingRecords.find((r: typeof resumes.$inferSelect) => r.userId === session.userId);
-  const slugTakenBySomeoneElse = existingRecords.find((r: typeof resumes.$inferSelect) => r.username === formData.slug && r.userId !== session.userId);
+  const userResume = existingRecords.find((r: any) => r.userId === session.userId);
+  const slugTakenBySomeoneElse = existingRecords.find((r: any) => r.username === formData.slug && r.userId !== session.userId);
 
   if (slugTakenBySomeoneElse) {
-    console.error(`Error: slug ${formData.slug} está ocupado por otro userId`);
     throw new Error("El slug ya está en uso. Por favor elige otro.");
   }
 
-  // Cálculo de Completion Score (0-100) básicos
+  // Cálculo de Completion Score (0-100)
   let score = 0;
-  if (formData.nombre) score += 10;
-  if (formData.email) score += 10;
-  if (formData.telefono) score += 10;
-  if (formData.tituloHabilitante) score += 20;
-  if (formData.provincia) score += 10;
-  if (formData.localidad) score += 10;
-  if (formData.experiencia && formData.experiencia.length > 0) score += 15;
-  if (formData.formacion && formData.formacion.length > 0) score += 15;
+  if (formData.photoUrl) score += 10;
+  if (formData.nombre) score += 5;
+  if (formData.email) score += 5;
+  if (formData.telefono) score += 5;
+  if (formData.tituloHabilitante) score += 10;
+  if (formData.experiencia?.length >= 1) score += 15;
+  if (formData.experiencia?.length >= 3) score += 5;
+  if (formData.formacion?.length >= 1) score += 15;
+  if (formData.provincia && formData.nivelEducativo?.length > 0 && formData.disponibilidad) score += 15;
+  if (formData.materias?.length >= 1) score += 5;
+  if (formData.resumen?.length > 20) score += 5;
+  if (!formData.isAutosave) score += 5; // Perfil publicado
 
-  // Si hay una foto nueva o existente, la guardamos en el perfil
-  const photoUrl = formData.photoUrl || null;
+  const isVerified = score >= 100;
 
   // Preparamos el JsonResume
   const jsonResume = {
@@ -52,7 +54,7 @@ export async function saveResumeAction(formData: any) {
       email: formData.email,
       phone: formData.telefono,
       label: formData.tituloHabilitante,
-      image: photoUrl,
+      image: formData.photoUrl || null,
       location: {
         city: formData.localidad,
         region: formData.provincia,
@@ -65,12 +67,13 @@ export async function saveResumeAction(formData: any) {
         tituloHabilitante: formData.tituloHabilitante,
         nivelEducativo: formData.nivelEducativo || [],
         materias: formData.materias || [],
+        resumen: formData.resumen || "",
         tipoEmpleo: formData.tipoEmpleo || [],
         provincia: formData.provincia,
         localidad: formData.localidad,
         disponibilidad: formData.disponibilidad,
         completionScore: score,
-        isVerified: false,
+        isVerified: isVerified,
         parsedFromPdf: formData.parsedFromPdf || false,
         cursos: formData.cursos || [],
       }
@@ -90,7 +93,6 @@ export async function saveResumeAction(formData: any) {
           updatedAt: new Date(),
         })
         .where(eq(resumes.id, resumeId));
-      console.log("Resume updated successfully:", resumeId, "Score:", score);
     } else {
       await db.insert(resumes).values({
         id: resumeId,
@@ -102,13 +104,9 @@ export async function saveResumeAction(formData: any) {
         isPublic: true,
         parsedFromPdf: formData.parsedFromPdf || false,
       });
-      console.log("Resume inserted successfully:", resumeId, "Score:", score);
     }
   } catch (dbError: any) {
-    console.error("DETALLE ERROR DB:", dbError);
-    // Extraer mensaje amigable si es posible
-    const msg = dbError.message || "Error desconocido en la base de datos";
-    throw new Error(msg);
+    throw new Error(dbError.message || "Error al guardar en la base de datos");
   }
 
   if (!formData.isAutosave) {
