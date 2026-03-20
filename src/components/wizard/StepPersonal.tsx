@@ -101,7 +101,8 @@ export const StepPersonal = ({ initialData, onNext }: StepPersonalProps) => {
   const handlePhotoProcessed = async (file: File) => {
     setIsUploading(true);
     try {
-      const res = await uploadFiles("imageUploader", { files: [file] });
+      // FIX: Use the correct endpoint name from uploadthing core.ts
+      const res = await uploadFiles("profileImage", { files: [file] });
       if (res?.[0]?.url) {
         setValue("photoUrl", res[0].url, { shouldValidate: true });
       }
