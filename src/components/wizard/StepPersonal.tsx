@@ -27,9 +27,10 @@ const personalSchema = z.object({
 interface StepPersonalProps {
   initialData: any;
   onNext: (data: any) => void;
+  onSaveOnly?: (data: any) => void;
 }
 
-export const StepPersonal = ({ initialData, onNext }: StepPersonalProps) => {
+export const StepPersonal = ({ initialData, onNext, onSaveOnly }: StepPersonalProps) => {
   const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [isUploading, setIsUploading] = useState(false);
 
@@ -230,29 +231,51 @@ export const StepPersonal = ({ initialData, onNext }: StepPersonalProps) => {
               slugStatus === 'taken' ? 'border-red-500 bg-red-50/20 shadow-lg' : 
               'border-dl-primary-light/30 focus-within:border-dl-accent focus-within:shadow-xl'}
           `}>
-            <span className="text-dl-muted font-bold text-xs hidden sm:inline select-none opacity-50 mr-1">docentelink.ar/cv/</span>
+            <span className="text-dl-muted font-bold text-xs select-none opacity-50 mr-1 sm:inline">docentelink.ar/cv/</span>
             <input 
               {...register("slug")}
               onChange={handleSlugChange}
               onBlur={(e) => validateSlug(e.target.value)}
-              className="flex-1 bg-transparent text-md font-bold outline-none placeholder:font-normal" 
+              className="flex-1 bg-transparent text-md font-bold outline-none placeholder:font-normal w-full" 
               placeholder="usuario"
             />
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 whitespace-nowrap">
               {slugStatus === 'checking' && <Loader2 className="w-5 h-5 text-dl-accent animate-spin" />}
-              {slugStatus === 'available' && <CheckCircle2 className="w-5 h-5 text-green-500" />}
-              {slugStatus === 'taken' && <AlertCircle className="w-5 h-5 text-red-500" />}
+              {slugStatus === 'available' && (
+                <div className="flex items-center gap-1 text-green-500 font-bold text-[10px] sm:text-xs">
+                   <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> 
+                   <span className="uppercase tracking-tight">¡Disponible!</span>
+                </div>
+              )}
+              {slugStatus === 'taken' && (
+                <div className="flex items-center gap-1 text-red-500 font-bold text-[10px] sm:text-xs">
+                   <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" /> 
+                   <span className="uppercase tracking-tight">No disponible</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="flex justify-end pt-4">
+      <div className="flex items-center justify-between pt-4 gap-4">
+         {onSaveOnly && (
+            <Button 
+               type="button" 
+               variant="outline" 
+               size="lg" 
+               className="font-black px-6 md:px-12"
+               onClick={() => handleSubmit(onSaveOnly)()}
+               disabled={slugStatus === 'checking' || isUploading}
+            >
+               Guardar cambios
+            </Button>
+         )}
          <Button 
             type="submit" 
             variant="primary" 
             size="lg" 
-            className="px-12 font-black shadow-lg disabled:opacity-50"
+            className="px-6 md:px-12 font-black shadow-lg ml-auto disabled:opacity-50"
             disabled={slugStatus === 'taken' || slugStatus === 'checking' || isUploading}
          >
             Siguiente

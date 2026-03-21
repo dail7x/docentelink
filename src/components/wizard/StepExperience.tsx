@@ -10,9 +10,10 @@ interface StepExperienceProps {
   initialData: any;
   onNext: (data: any) => void;
   onBack: () => void;
+  onSaveOnly?: (data: any) => void;
 }
 
-export const StepExperience = ({ initialData, onNext, onBack }: StepExperienceProps) => {
+export const StepExperience = ({ initialData, onNext, onBack, onSaveOnly }: StepExperienceProps) => {
   const { register, control, handleSubmit, setValue, watch } = useForm({
     defaultValues: {
       resumen: initialData?.resumen || "",
@@ -377,14 +378,21 @@ export const StepExperience = ({ initialData, onNext, onBack }: StepExperiencePr
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-12 border-t-2 border-dl-primary-light/20">
+      <div className="flex items-center justify-between pt-12 border-t-2 border-dl-primary-light/20 flex-wrap gap-4">
          <Button type="button" variant="ghost" size="lg" onClick={onBack} className="font-black text-dl-muted">
             Atrás
          </Button>
-         <Button type="submit" variant="primary" size="lg" className="px-16 font-black shadow-xl group">
-            Siguiente: Identidad Docente
-            <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-         </Button>
+         <div className="flex gap-4 ml-auto">
+           {onSaveOnly && (
+              <Button type="button" variant="outline" size="lg" className="font-black" onClick={() => handleSubmit(onSaveOnly)()}>
+                 Guardar cambios
+              </Button>
+           )}
+           <Button type="submit" variant="primary" size="lg" className="px-10 font-black shadow-xl group">
+              Siguiente: Identidad
+              <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+           </Button>
+         </div>
       </div>
     </form>
   );

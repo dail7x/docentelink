@@ -9,9 +9,11 @@ import {
   Award, 
   User as UserIcon,
   MapPin,
-  Quote
+  Quote,
+  EyeOff
 } from 'lucide-react';
 import Image from 'next/image';
+import { syncClerkUserWithDb } from '@/lib/user';
 
 // Format "YYYY-MM" → "Mar 2023" 
 function formatDate(dateStr: string | null | undefined): string {
@@ -37,6 +39,28 @@ export default async function PublicCVPage({ params }: { params: Promise<{ usern
   const basics = jsonResume?.basics || {};
   const metaDocente = jsonResume?.meta?.docente || {};
   
+  // Checking visibility status
+  const isPublic = resume.isPublic ?? false;
+  const hiddenUntil = metaDocente.hiddenUntil ? new Date(metaDocente.hiddenUntil) : null;
+  const isHiddenTemporarily = hiddenUntil && hiddenUntil > new Date();
+  const isActuallyPublic = isPublic && !isHiddenTemporarily;
+
+  // Let owner bypass the visibility lock
+  const user = await syncClerkUserWithDb().catch(() => null);
+  const isOwner = user?.id === resume.userId;
+
+  if (!isActuallyPublic && !isOwner) {
+    return (
+      <div className="min-h-screen bg-dl-primary-bg flex items-center justify-center p-6">
+         <div className="max-w-md w-full text-center space-y-4 bg-white p-10 rounded-3xl shadow-lg border border-dl-primary-light/20">
+            <EyeOff className="w-12 h-12 text-dl-muted mx-auto mb-2 opacity-50" />
+            <h1 className="text-2xl font-black text-dl-primary-dark tracking-tight">Perfil no disponible</h1>
+            <p className="text-dl-muted text-sm font-bold leading-relaxed">Este perfil docente está oculto temporalmente o ha sido desactivado por su autor.</p>
+         </div>
+      </div>
+    );
+  }
+
   const nombre = basics.name || "Perfil Docente";
   const email = basics.email;
   const telefono = basics.phone;
@@ -58,6 +82,12 @@ export default async function PublicCVPage({ params }: { params: Promise<{ usern
     <div className="bg-[#F8FAFC] min-h-screen pt-24 pb-20 px-4 md:px-6">
       <div className="max-w-[820px] mx-auto space-y-6">
         
+        {!isActuallyPublic && isOwner && (
+          <div className="mb-4 bg-amber-100 text-amber-800 text-xs font-bold uppercase tracking-widest text-center py-3 px-4 rounded-xl border border-amber-200 shadow-sm animate-pulse">
+            Ojo: Estás viendo tu perfil en modo oculto. Nadie más puede verlo en este momento.
+          </div>
+        )}
+
         {/* Header Card */}
         <header className="bg-white rounded-3xl overflow-hidden shadow-lg border border-dl-primary-light/10">
           

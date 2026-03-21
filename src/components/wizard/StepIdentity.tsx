@@ -10,6 +10,7 @@ interface StepIdentityProps {
   initialData: any;
   onFinish: (data: any) => void;
   onBack: () => void;
+  onSaveOnly?: (data: any) => void;
 }
 
 const MATERIAS_SUGERIDAS = [
@@ -80,7 +81,7 @@ const ToggleSwitch = ({ checked, onChange }: { checked: boolean; onChange: () =>
   </button>
 );
 
-export const StepIdentity = ({ initialData, onFinish, onBack }: StepIdentityProps) => {
+export const StepIdentity = ({ initialData, onFinish, onBack, onSaveOnly }: StepIdentityProps) => {
   const { register, handleSubmit, watch, setValue } = useForm({
     defaultValues: {
       tituloHabilitante: initialData?.tituloHabilitante || "",
@@ -325,9 +326,16 @@ export const StepIdentity = ({ initialData, onFinish, onBack }: StepIdentityProp
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-12">
+      <div className="flex items-center justify-between pt-12 flex-wrap gap-4">
         <Button type="button" variant="ghost" size="lg" onClick={onBack} className="font-black text-dl-muted">Atrás</Button>
-        <Button type="submit" variant="accent" size="xl" className="px-20 font-black shadow-xl group">¡Finalizar Perfil! <CheckCircle2 className="ml-2 w-6 h-6 group-hover:scale-110 transition-transform" /></Button>
+        <div className="flex gap-4 ml-auto">
+          {onSaveOnly && (
+             <Button type="button" variant="outline" size="lg" className="font-black" onClick={() => handleSubmit(onSaveOnly)()}>
+                Guardar cambios
+             </Button>
+          )}
+          <Button type="submit" variant="accent" size="lg" className="px-10 font-black shadow-xl group">¡Finalizar Perfil! <CheckCircle2 className="ml-2 w-6 h-6 group-hover:scale-110 transition-transform" /></Button>
+        </div>
       </div>
     </form>
   );

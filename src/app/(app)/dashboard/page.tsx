@@ -10,6 +10,7 @@ import { db } from "@/db";
 import { resumes } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { cn } from "@/lib/utils";
+import { ProfileVisibilityManager } from "@/components/dashboard/ProfileVisibilityManager";
 
 export default async function DashboardPage() {
   const user = await syncClerkUserWithDb();
@@ -95,12 +96,12 @@ export default async function DashboardPage() {
                            {userResume.views || 0}
                         </p>
                      </div>
-                     <div className="p-6 rounded-3xl border-2 border-dl-primary-light/10 space-y-1">
-                        <p className="text-[10px] font-black uppercase text-dl-muted tracking-widest">Estado</p>
-                        <p className="text-lg font-black text-green-600 flex items-center gap-2 uppercase tracking-tight">
-                           <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                           Publicado
-                        </p>
+                     <div className="md:col-span-2">
+                       <ProfileVisibilityManager 
+                         resumeId={userResume.id}
+                         isPublic={userResume.isPublic ?? false}
+                         hiddenUntil={(userResume.jsonResume.meta as any)?.docente?.hiddenUntil ?? null}
+                       />
                      </div>
                   </div>
                </div>

@@ -61,6 +61,21 @@ function CreateCvContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleSaveOnly = async (stepData: any) => {
+    const updatedData = { ...formData, ...stepData };
+    setFormData(updatedData);
+    try {
+      setIsSubmitting(true);
+      await saveResumeAction({ ...updatedData, isAutosave: true });
+      setIsSubmitting(false);
+      alert("¡Cambios guardados correctamente!");
+    } catch (e) {
+      console.error(e);
+      alert("Error al guardar cambios.");
+      setIsSubmitting(false);
+    }
+  };
+
   const handleGoBack = () => {
     if (currentStep > 0) {
       setCurrentStep(prev => prev - 1);
@@ -204,7 +219,7 @@ function CreateCvContent() {
                 <h2 className="text-3xl font-black text-dl-primary-dark">Datos Personales & Foto</h2>
                 <p className="text-dl-muted font-bold text-lg">Contanos quién sos y cómo te vemos.</p>
              </div>
-             <StepPersonal initialData={formData} onNext={handleNextStep} />
+             <StepPersonal initialData={formData} onNext={handleNextStep} onSaveOnly={handleSaveOnly} />
           </div>
         )}
 
@@ -214,7 +229,7 @@ function CreateCvContent() {
                 <h2 className="text-3xl font-black text-dl-primary-dark">Experiencia & Educación</h2>
                 <p className="text-dl-muted font-bold text-lg">Tu camino recorrido hasta hoy.</p>
              </div>
-             <StepExperience initialData={formData} onBack={handleGoBack} onNext={handleNextStep} />
+             <StepExperience initialData={formData} onBack={handleGoBack} onNext={handleNextStep} onSaveOnly={handleSaveOnly} />
           </div>
         )}
 
@@ -224,7 +239,7 @@ function CreateCvContent() {
                 <h2 className="text-3xl font-black text-dl-primary-dark">Identidad Docente</h2>
                 <p className="text-dl-muted font-bold text-lg">Lo que te hace único en el aula.</p>
              </div>
-             <StepIdentity initialData={formData} onBack={handleGoBack} onFinish={handleFinish} />
+             <StepIdentity initialData={formData} onBack={handleGoBack} onFinish={handleFinish} onSaveOnly={handleSaveOnly} />
           </div>
         )}
       </div>
