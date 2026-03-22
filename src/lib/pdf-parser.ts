@@ -1,7 +1,4 @@
-import { extractText } from 'unpdf'
-import * as pdfjsLib from 'pdfjs-dist'
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+import { extractText, getResolvedPDFJS } from 'unpdf'
 
 export async function extractPdfText(file: File): Promise<string> {
   if (file.size > 10 * 1024 * 1024) throw new Error('El PDF no puede superar 10MB')
@@ -20,8 +17,14 @@ export async function extractPdfText(file: File): Promise<string> {
 
 export async function extractPhotoFromPdf(file: File): Promise<Blob | null> {
   try {
+    const pdfjs = await getResolvedPDFJS();
+    // En el cliente, no usamos canvas ni dependencias del servidor
+    if (typeof window !== 'undefined' && !pdfjs.GlobalWorkerOptions.workerSrc) {
+       pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+    }
+
     const arrayBuffer = await file.arrayBuffer();
-    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
     const pdf = await loadingTask.promise;
 
     // Buscar en las primeras 2 páginas
@@ -34,7 +37,7 @@ export async function extractPhotoFromPdf(file: File): Promise<Blob | null> {
 
       for (let i = 0; i < operatorList.fnArray.length; i++) {
         // OPS.paintImageXObject = 85
-        if (operatorList.fnArray[i] !== pdfjsLib.OPS.paintImageXObject) continue
+        if (operatorList.fnArray[i] !== pdfjs.OPS.paintImageXObject) continue
 
         const imgKey = operatorList.argsArray[i][0]
 
