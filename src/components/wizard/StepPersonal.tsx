@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { checkSlugAction } from '@/app/actions/check-slug';
 import { PhotoEditor } from './PhotoEditor';
 import { uploadFiles } from '@/lib/uploadthing';
+import { useDebounce } from '@/hooks/useDebounce';
 
 
 const personalSchema = z.object({
@@ -73,7 +74,11 @@ export const StepPersonal = ({ initialData, onNext, onSaveOnly }: StepPersonalPr
   const photoUrl = watch("photoUrl");
   const mostrarTelPublico = watch("mostrarTelPublico");
 
-  const validateSlug = useCallback(async (val: string) => {
+  // Debounce slug validation to reduce API calls
+  const debouncedSlug = useDebounce(slugValue, 500);
+
+  // Remove unnecessary useCallback - function is stable
+  const validateSlug = async (val: string) => {
     if (val && val.length >= 3) {
       setSlugStatus('checking');
       try {
@@ -83,16 +88,24 @@ export const StepPersonal = ({ initialData, onNext, onSaveOnly }: StepPersonalPr
         setSlugStatus('idle');
       }
     }
-  }, []);
+  };
 
+  // Validate slug when debounced value changes
+  useEffect(() => {
+    if (debouncedSlug && debouncedSlug.length >= 3) {
+      validateSlug(debouncedSlug);
+    }
+  }, [debouncedSlug]);
+
+  // Initialize slug on mount only
   useEffect(() => {
     if (!initialData?.slug && currentNombre && currentApellido) {
       const suggested = generateSuggestedSlug(currentNombre, currentApellido);
       setValue("slug", suggested, { shouldValidate: true });
-      validateSlug(suggested);
     } else if (initialData?.slug) {
       validateSlug(initialData.slug);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); 
 
   const onSubmit = (data: any) => {
