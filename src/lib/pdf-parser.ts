@@ -46,9 +46,13 @@ export async function extractPhotoFromPdf(file: File): Promise<Blob | null> {
           page.objs.get(imgKey, resolve)
         });
 
-        if (!img?.data) continue;
+        if (!img || (!img.data && !img.bitmap)) {
+           // Fallback opcional por si no tiene data ni bitmap
+           continue;
+        }
 
-        const { width, height } = img;
+        const width = img.width || (img.bitmap ? img.bitmap.width : 0);
+        const height = img.height || (img.bitmap ? img.bitmap.height : 0);
         const area = width * height;
 
         // Filtrar imágenes muy pequeñas (logos, iconos, decoración)
@@ -63,24 +67,29 @@ export async function extractPhotoFromPdf(file: File): Promise<Blob | null> {
           const canvas = new OffscreenCanvas(width, height);
           const ctx = canvas.getContext('2d')!;
           
-          let imageData: ImageData;
-          if (img.data.length === width * height * 4) { // RGBA
-             imageData = new ImageData(new Uint8ClampedArray(img.data), width, height);
-          } else if (img.data.length === width * height * 3) { // RGB -> RGBA conversion
-             const rgbaArray = new Uint8ClampedArray(width * height * 4);
-             for (let j = 0, k = 0; j < img.data.length; j += 3, k += 4) {
-                rgbaArray[k] = img.data[j];
-                rgbaArray[k+1] = img.data[j+1];
-                rgbaArray[k+2] = img.data[j+2];
-                rgbaArray[k+3] = 255; // Alpha
+          if (img.bitmap) {
+             // La imagen es un ImageBitmap nativo del navegador (muy común en PDF.js versión moderna)
+             ctx.drawImage(img.bitmap, 0, 0, width, height);
+          } else if (img.data) {
+             // Es un array de bytes crudos
+             let imageData: ImageData;
+             if (img.data.length === width * height * 4) { // RGBA
+                imageData = new ImageData(new Uint8ClampedArray(img.data), width, height);
+             } else if (img.data.length === width * height * 3) { // RGB -> RGBA conversion
+                const rgbaArray = new Uint8ClampedArray(width * height * 4);
+                for (let j = 0, k = 0; j < img.data.length; j += 3, k += 4) {
+                   rgbaArray[k] = img.data[j];
+                   rgbaArray[k+1] = img.data[j+1];
+                   rgbaArray[k+2] = img.data[j+2];
+                   rgbaArray[k+3] = 255; // Alpha
+                }
+                imageData = new ImageData(rgbaArray, width, height);
+             } else {
+                continue; // Formato desconocido
              }
-             imageData = new ImageData(rgbaArray, width, height);
-          } else {
-             // Formato desconocido, tratar de procesar o skip
-             continue;
+             ctx.putImageData(imageData, 0, 0);
           }
           
-          ctx.putImageData(imageData, 0, 0);
           const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.92 });
           bestCandidate = { blob, area };
         }
