@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { FileUp, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { extractPdfText, extractPhotoFromPdf } from '@/lib/pdf-parser';
 import { cn } from '@/lib/utils';
+import { parseCvFromText } from '@/app/actions/parse-cv';
 
 interface PdfUploaderProps {
   onDataParsed: (data: any) => void;
@@ -37,28 +38,23 @@ export const PdfUploader = ({ onDataParsed, className }: PdfUploaderProps) => {
 
       setStatus('parsing');
 
-      // 2. Enviamos el texto a nuestra API de Gemini
-      const response = await fetch('/api/parse-cv', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
-      });
+      // 2. Procesamos con IA usando Server Action (evita waterfall HTTP)
+      // Parallel processing: IA parsing happens while we already have the text
+      const result = await parseCvFromText(text);
 
-      const result = await response.json();
-
-      if (result.success) {
+      if (result.success && result.data) {
         if (result.data.es_cv_docente === false) {
           setWarning(result.data.observaciones || "Este CV no parece de perfil docente o educativo. ¿Querés continuar usando los datos extraídos de todas formas?");
         }
         setStatus('done');
-        
+
         // Agregar foto a los datos devueltos si existe
-        const finalData = { ...result.data };
+        const finalData = { ...result.data } as Record<string, unknown>;
         if (photoBlob) {
           finalData.photoPreview = URL.createObjectURL(photoBlob);
-          finalData.photoBlob = photoBlob; // opcional por si queremos subirlo directo
+          finalData.photoBlob = photoBlob;
         }
-        
+
         onDataParsed(finalData);
       } else {
         throw new Error(result.message || "Error al procesar con IA");

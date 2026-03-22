@@ -3,7 +3,11 @@
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Camera, RefreshCw, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
-import { removeBackground } from '@imgly/background-removal';
+// Lazy import for heavy library to reduce initial bundle size
+const removeBackgroundLazy = async (file: File, options?: any) => {
+  const { removeBackground } = await import('@imgly/background-removal');
+  return removeBackground(file, options);
+};
 
 interface PhotoEditorProps {
   onPhotoProcessed: (file: File) => void;
@@ -22,7 +26,8 @@ export const PhotoEditor = ({ onPhotoProcessed, initialImageUrl, extractedPhotoB
     try {
       setIsProcessing(true);
       
-      const blob = await removeBackground(file, {
+      // Lazy load the heavy library only when needed
+      const blob = await removeBackgroundLazy(file, {
         progress: (status: string, progress: number) => {
            console.log("Background removal progress:", status, progress);
         }
