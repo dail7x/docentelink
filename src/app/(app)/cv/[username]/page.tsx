@@ -1,6 +1,7 @@
 import React from 'react';
 import { getPublicResumeAction } from '@/app/actions/get-public-cv';
 import { notFound } from 'next/navigation';
+import { Metadata } from 'next';
 import { 
   Mail, 
   Phone, 
@@ -10,12 +11,57 @@ import {
   User as UserIcon,
   MapPin,
   Quote,
-  EyeOff
+  EyeOff,
+  Download
 } from 'lucide-react';
 import Image from 'next/image';
 import { syncClerkUserWithDb } from '@/lib/user';
 
 // Format "YYYY-MM" → "Mar 2023" 
+export async function generateMetadata({ 
+  params 
+}: { 
+  params: Promise<{ username: string }> 
+}): Promise<Metadata> {
+  const { username } = await params;
+  
+  try {
+    const resume = await getPublicResumeAction(username);
+    
+    if (!resume || !resume.isPublic) {
+      return {
+        title: 'Perfil no disponible | DocenteLink',
+      };
+    }
+
+    const jsonResume = resume.jsonResume as any;
+    const name = jsonResume?.basics?.name || 'Docente';
+    const titulo = jsonResume?.meta?.docente?.tituloHabilitante || 'Docente Profesional';
+    const provincia = jsonResume?.meta?.docente?.provincia || '';
+
+    return {
+      title: `${name} — ${titulo} | DocenteLink`,
+      description: `Perfil profesional de ${name}, ${titulo}${provincia ? ` en ${provincia}` : ''}. Conectá con docentes calificados en DocenteLink.`,
+      openGraph: {
+        title: `${name} — ${titulo}`,
+        description: `Perfil profesional de ${name}, ${titulo}${provincia ? ` en ${provincia}` : ''}.`,
+        images: [`/api/og/${username}`],
+        type: 'profile',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: `${name} — ${titulo}`,
+        description: `Perfil profesional de ${name}`,
+        images: [`/api/og/${username}`],
+      },
+    };
+  } catch (error) {
+    return {
+      title: 'Perfil Docente | DocenteLink',
+    };
+  }
+}
+
 function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr || dateStr === 'actual' || dateStr === '') return 'Actualidad';
   const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -160,6 +206,14 @@ export default async function PublicCVPage({ params }: { params: Promise<{ usern
                 <Phone className="w-3.5 h-3.5" /> WhatsApp
               </a>
             )}
+            <a 
+              href={`/api/cv/${username}/pdf`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 bg-dl-primary-dark rounded-full text-xs font-black text-white hover:bg-dl-accent transition-all border border-dl-primary-dark"
+            >
+              <Download className="w-3.5 h-3.5" /> Descargar CV (PDF)
+            </a>
           </div>
           {/* Print contact */}
           <div className="hidden print:block px-10 pb-6 text-xs font-bold text-dl-muted space-y-1">
