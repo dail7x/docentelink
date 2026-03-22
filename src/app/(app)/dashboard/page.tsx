@@ -3,7 +3,7 @@ export const revalidate = 0;
 
 import { syncClerkUserWithDb } from "@/lib/user";
 import { Button } from "@/components/ui/Button";
-import { Plus, Share2, Award, Zap, ExternalLink, Edit3, Eye, FileText, Download } from "lucide-react";
+import { Plus, Share2, Award, Zap, ExternalLink, Edit3, Eye, FileText } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
@@ -85,15 +85,6 @@ export default async function DashboardPage() {
                               <Edit3 className="w-4 h-4 mr-2" /> Editar
                            </Button>
                         </Link>
-                        <a 
-                          href={`/api/cv/me/pdf`} 
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                           <Button variant="accent" size="sm" className="font-bold">
-                              <Download className="w-4 h-4 mr-2" /> Descargar PDF
-                           </Button>
-                        </a>
                      </div>
                   </div>
 

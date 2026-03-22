@@ -11,11 +11,11 @@ import {
   User as UserIcon,
   MapPin,
   Quote,
-  EyeOff,
-  Download
+  EyeOff
 } from 'lucide-react';
 import Image from 'next/image';
 import { syncClerkUserWithDb } from '@/lib/user';
+import { PrintCvButton } from '@/components/pdf/PrintCvButton';
 
 // Format "YYYY-MM" → "Mar 2023" 
 export async function generateMetadata({ 
@@ -206,14 +206,6 @@ export default async function PublicCVPage({ params }: { params: Promise<{ usern
                 <Phone className="w-3.5 h-3.5" /> WhatsApp
               </a>
             )}
-            <a 
-              href={`/api/cv/${username}/pdf`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-4 py-2 bg-dl-primary-dark rounded-full text-xs font-black text-white hover:bg-dl-accent transition-all border border-dl-primary-dark"
-            >
-              <Download className="w-3.5 h-3.5" /> Descargar CV (PDF)
-            </a>
           </div>
           {/* Print contact */}
           <div className="hidden print:block px-10 pb-6 text-xs font-bold text-dl-muted space-y-1">
@@ -324,14 +316,43 @@ export default async function PublicCVPage({ params }: { params: Promise<{ usern
         </footer>
       </div>
 
+      {/* Botón flotante fuera del contenedor del perfil */}
+      <PrintCvButton username={nombre} variant="floating" />
+
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          body { background: white !important; }
-          .bg-\\[\\#F8FAFC\\] { background: white !important; }
+          body { 
+            background: white !important; 
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .bg-[#F8FAFC] { background: white !important; }
           .shadow-lg, .shadow-md { box-shadow: none !important; }
-          .rounded-3xl { border-radius: 0 !important; }
+          .rounded-3xl, .rounded-2xl, .rounded-xl { border-radius: 8px !important; }
           .print\\:hidden { display: none !important; }
           .print\\:block { display: block !important; }
+          
+          /* Optimizaciones para el CV */
+          .printing-cv header { 
+            page-break-inside: avoid; 
+            break-inside: avoid;
+          }
+          .printing-cv section { 
+            page-break-inside: avoid; 
+            break-inside: avoid;
+            margin-bottom: 20px !important;
+          }
+          
+          /* Asegurar que los colores se impriman */
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+        }
+        
+        /* Ocultar botón flotante en impresión */
+        @media print {
+          .fixed { display: none !important; }
         }
       `}} />
     </div>
