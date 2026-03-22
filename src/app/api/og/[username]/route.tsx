@@ -1,5 +1,5 @@
 import { ImageResponse } from 'next/og';
-import { getPublicCvAction } from '@/app/actions/get-public-cv';
+import { getPublicResumeAction } from '@/app/actions/get-public-cv';
 
 export const runtime = 'edge';
 
@@ -10,15 +10,15 @@ export async function GET(
   const { username } = await params;
   
   try {
-    const result = await getPublicCvAction(username);
+    const resume = await getPublicResumeAction(username);
     
-    if (!result.success || !result.data) {
+    if (!resume) {
       return new Response('Not found', { status: 404 });
     }
 
-    const cv = result.data;
-    const { name, label, image } = cv.basics || {};
-    const { tituloHabilitante, isVerified, provincia } = cv.meta?.docente || {};
+    const cv = resume.jsonResume as any;
+    const { name, label, image } = cv?.basics || {};
+    const { tituloHabilitante, isVerified, provincia } = cv?.meta?.docente || {};
 
     return new ImageResponse(
       (

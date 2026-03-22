@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { renderToBuffer } from '@react-pdf/renderer';
 import { auth } from '@clerk/nextjs/server';
 import { getDb } from '@/db';
 import { resumes } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { CvPdfTemplate } from '@/components/pdf/CvPdfTemplate';
 import type { JsonResume } from '@/db/schema';
 
 export const runtime = 'nodejs';
@@ -34,11 +32,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Importar dinámicamente para evitar problemas de bundling
+    const [{ renderToBuffer }, { CvPdfTemplate }] = await Promise.all([
+      import('@react-pdf/renderer'),
+      import('@/components/pdf/CvPdfTemplate'),
+    ]);
+
     const cv = resume.jsonResume as JsonResume;
     const username = resume.username;
 
     // TODO: Verificar plan del usuario para quitar watermark
-    // Por ahora siempre mostramos watermark (plan free)
     const showWatermark = true;
 
     // Generar el PDF
