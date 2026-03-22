@@ -148,6 +148,7 @@ export const StepPersonal = ({ initialData, onNext, onSaveOnly }: StepPersonalPr
           <PhotoEditor 
             onPhotoProcessed={handlePhotoProcessed}
             initialImageUrl={photoUrl}
+            extractedPhotoBlob={initialData?.photoBlob as Blob | undefined}
           />
           {isUploading && (
             <div className="mt-2 flex items-center gap-2 text-dl-accent animate-pulse">

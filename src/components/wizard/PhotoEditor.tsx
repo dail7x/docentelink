@@ -8,10 +8,12 @@ import { removeBackground } from '@imgly/background-removal';
 interface PhotoEditorProps {
   onPhotoProcessed: (file: File) => void;
   initialImageUrl?: string;
+  extractedPhotoBlob?: Blob;
 }
 
-export const PhotoEditor = ({ onPhotoProcessed, initialImageUrl }: PhotoEditorProps) => {
+export const PhotoEditor = ({ onPhotoProcessed, initialImageUrl, extractedPhotoBlob }: PhotoEditorProps) => {
   const [photo, setPhoto] = useState<string | null>(initialImageUrl || null);
+  const [extractedPreview, setExtractedPreview] = useState<string | null>(() => extractedPhotoBlob ? URL.createObjectURL(extractedPhotoBlob) : null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -51,9 +53,36 @@ export const PhotoEditor = ({ onPhotoProcessed, initialImageUrl }: PhotoEditorPr
     fileInputRef.current?.click();
   };
 
+  const useExtracted = () => {
+    if (!extractedPhotoBlob) return;
+    const file = new File([extractedPhotoBlob], 'extracted_cv_photo.jpg', { type: extractedPhotoBlob.type || 'image/jpeg' });
+    setExtractedPreview(null); // Ocultar el prompt de confirmación
+    processImage(file);
+  };
+
+  const rejectExtracted = () => {
+    setExtractedPreview(null);
+  };
+
   return (
     <div className="flex flex-col items-center space-y-6">
-      <div className="relative group overflow-hidden">
+      {/* Prompt extraído de CV */}
+      {extractedPreview && !photo && (
+        <div className="w-full max-w-sm bg-dl-primary-bg/80 border-2 border-dl-accent/30 rounded-3xl p-6 flex flex-col items-center text-center space-y-4 shadow-sm animate-in zoom-in-95">
+           <p className="text-sm font-black text-dl-primary-dark tracking-tight">Encontramos esta foto en tu CV</p>
+           <img src={extractedPreview} alt="Foto extraída" className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md mx-auto" />
+           <p className="text-[10px] font-bold text-dl-muted uppercase tracking-widest italic">¿Podés usarla o subir una nueva?</p>
+           <div className="flex gap-2 w-full pt-2">
+             <Button variant="outline" size="sm" className="flex-1 font-bold text-[10px]" onClick={rejectExtracted}>Descartar</Button>
+             <Button variant="accent" size="sm" className="flex-1 font-bold text-[10px]" onClick={useExtracted}>Usar esta foto</Button>
+           </div>
+        </div>
+      )}
+
+      {/* Editor normal */}
+      {(!extractedPreview || photo) && (
+        <>
+          <div className="relative group overflow-hidden animate-in fade-in">
          <div className="w-48 h-48 rounded-[3.5rem] bg-dl-primary-bg border-4 border-dl-primary-light flex items-center justify-center relative overflow-hidden shadow-inner group-hover:border-dl-accent/40 transition-all duration-500">
             {photo ? (
               <img src={photo} alt="Vista previa" className="w-full h-full object-cover transition-all duration-700 animate-in fade-in" />
@@ -105,10 +134,12 @@ export const PhotoEditor = ({ onPhotoProcessed, initialImageUrl }: PhotoEditorPr
               "Elegir mi foto de perfil"
             )}
          </Button>
-         <p className="text-[10px] text-dl-muted font-bold uppercase tracking-widest italic opacity-70">
+          <p className="text-[10px] text-dl-muted font-bold uppercase tracking-widest italic opacity-70">
             Automáticamente aplicaremos el estilo editorial.
-         </p>
-      </div>
+          </p>
+       </div>
+       </>
+      )}
     </div>
   );
 };

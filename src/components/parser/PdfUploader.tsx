@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { FileUp, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
-import { extractPdfText } from '@/lib/pdf-parser';
+import { extractPdfText, extractPhotoFromPdf } from '@/lib/pdf-parser';
 import { cn } from '@/lib/utils';
 
 interface PdfUploaderProps {
@@ -25,8 +25,11 @@ export const PdfUploader = ({ onDataParsed, className }: PdfUploaderProps) => {
       setStatus('extracting');
       setErrorMessage(null);
 
-      // 1. Extraemos texto del PDF en el cliente
-      const text = await extractPdfText(file);
+      // 1. Extraemos texto del PDF y foto en paralelo en el cliente
+      const [text, photoBlob] = await Promise.all([
+        extractPdfText(file),
+        extractPhotoFromPdf(file)
+      ]);
       
       if (!text || text.trim().length < 50) {
         throw new Error("El PDF no parece tener suficiente texto extraíble. ¿Es una imagen escaneada?");
@@ -43,12 +46,20 @@ export const PdfUploader = ({ onDataParsed, className }: PdfUploaderProps) => {
 
       const result = await response.json();
 
-        if (result.success) {
+      if (result.success) {
         if (result.data.es_cv_docente === false) {
           setWarning(result.data.observaciones || "Este CV no parece de perfil docente o educativo. ¿Querés continuar usando los datos extraídos de todas formas?");
         }
         setStatus('done');
-        onDataParsed(result.data);
+        
+        // Agregar foto a los datos devueltos si existe
+        const finalData = { ...result.data };
+        if (photoBlob) {
+          finalData.photoPreview = URL.createObjectURL(photoBlob);
+          finalData.photoBlob = photoBlob; // opcional por si queremos subirlo directo
+        }
+        
+        onDataParsed(finalData);
       } else {
         throw new Error(result.message || "Error al procesar con IA");
       }
