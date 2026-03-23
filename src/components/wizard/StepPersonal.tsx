@@ -11,7 +11,7 @@ import { checkSlugAction } from '@/app/actions/check-slug';
 import { PhotoEditor } from './PhotoEditor';
 import { uploadFiles } from '@/lib/uploadthing';
 import { useDebounce } from '@/hooks/useDebounce';
-
+import type { WizardStepProps } from '@/types/wizard';
 
 const personalSchema = z.object({
   nombre: z.string().min(2, "El nombre es muy corto"),
@@ -25,13 +25,7 @@ const personalSchema = z.object({
   photoUrl: z.string().optional(),
 });
 
-interface StepPersonalProps {
-  initialData: any;
-  onNext: (data: any) => void;
-  onSaveOnly?: (data: any) => void;
-}
-
-export const StepPersonal = ({ initialData, onNext, onSaveOnly }: StepPersonalProps) => {
+export const StepPersonal = ({ initialData, onNext, onSaveOnly }: WizardStepProps) => {
   const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [isUploading, setIsUploading] = useState(false);
 
@@ -52,13 +46,13 @@ export const StepPersonal = ({ initialData, onNext, onSaveOnly }: StepPersonalPr
     return { nombre, apellido };
   };
 
-  const nameData = splitName(initialData?.nombre);
+  const nameData = splitName(initialData?.nombre || '');
   
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(personalSchema),
     defaultValues: {
-      nombre: initialData?.name || nameData.nombre,
-      apellido: initialData?.surname || nameData.apellido,
+      nombre: initialData?.nombre || nameData.nombre,
+      apellido: initialData?.apellido || nameData.apellido,
       email: initialData?.email || "",
       telefono: initialData?.telefono || "",
       mostrarTelPublico: initialData?.mostrarTelPublico ?? false,
@@ -110,6 +104,7 @@ export const StepPersonal = ({ initialData, onNext, onSaveOnly }: StepPersonalPr
 
   const onSubmit = (data: any) => {
     if (slugStatus === 'taken' || slugStatus === 'checking') return;
+    if (!onNext) return;
     onNext({
       ...data,
       nombre: `${data.nombre} ${data.apellido}`.trim()

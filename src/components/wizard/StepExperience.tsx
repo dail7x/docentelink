@@ -1,19 +1,15 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, memo } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { Button } from '@/components/ui/Button';
 import { Briefcase, GraduationCap, Plus, Trash2, Calendar, ArrowRight, Check, Sparkles, Quote, Zap, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/Button';
+import type { WizardStepProps } from '@/types/wizard';
+import { HABILIDADES_SUGERIDAS } from '@/data/education';
+import { MAX_RESUMEN_LENGTH } from '@/lib/validations';
 
-interface StepExperienceProps {
-  initialData: any;
-  onNext: (data: any) => void;
-  onBack: () => void;
-  onSaveOnly?: (data: any) => void;
-}
-
-export const StepExperience = ({ initialData, onNext, onBack, onSaveOnly }: StepExperienceProps) => {
+export const StepExperience = memo(({ initialData, onNext, onBack, onSaveOnly }: WizardStepProps) => {
   const { register, control, handleSubmit, setValue, watch } = useForm({
     defaultValues: {
       resumen: initialData?.resumen || "",
@@ -43,19 +39,9 @@ export const StepExperience = ({ initialData, onNext, onBack, onSaveOnly }: Step
   const resumenValue = watch("resumen");
   const mostrarResumenPublico = watch("mostrarResumenPublico");
   const selectedHabilidades = watch("habilidades");
-  const MAX_RESUMEN = 400;
 
   const [habInput, setHabInput] = useState("");
   const habRef = useRef<HTMLDivElement>(null);
-
-  const HABILIDADES_SUGERIDAS = [
-    "Microsoft Office", "Google Workspace", "Excel Avanzado", "PowerPoint",
-    "Canva", "Adobe Photoshop", "Premiere Pro", "Audacity",
-    "Inglés", "Portugués", "Italiano", "Francés",
-    "Trabajo en equipo", "Comunicación asertiva", "Resolución de conflictos",
-    "Gestión del tiempo", "Liderazgo", "Empatía", "Adaptabilidad",
-    "Moodle", "Google Classroom", "Zoom", "Teams", "TIC aplicadas a la educación"
-  ];
 
   const addHabilidad = (val: string) => {
     const v = val.trim();
@@ -72,8 +58,8 @@ export const StepExperience = ({ initialData, onNext, onBack, onSaveOnly }: Step
     s.toLowerCase().includes(habInput.toLowerCase()) && !selectedHabilidades.includes(s)
   );
 
-  const onSubmit = (data: any) => {
-    onNext(data);
+  const onSubmit = (data: Record<string, unknown>) => {
+    onNext?.(data as Partial<Record<string, unknown>> & { [key: string]: unknown });
   };
 
   return (
@@ -120,19 +106,19 @@ export const StepExperience = ({ initialData, onNext, onBack, onSaveOnly }: Step
              {...register("resumen")}
              className="w-full bg-transparent text-lg font-medium text-dl-primary-dark outline-none min-h-[120px] resize-none leading-relaxed placeholder:text-dl-muted/40"
              placeholder="Contanos un poco de tu trayectoria..."
-             maxLength={MAX_RESUMEN}
+             maxLength={MAX_RESUMEN_LENGTH}
            />
            
            <div className="flex justify-between items-center mt-4 pt-4 border-t border-dl-accent/10">
               <p className="text-[9px] text-dl-accent/60 font-black uppercase tracking-widest italic">
-                 {resumenValue?.length < 50 ? "¡Un buen resumen te ayuda a destacar!" : "¡Se ve profesional!"}
+                 {resumenValue?.length < 50 ? "Un buen resumen te ayuda a destacar!" : "Se ve profesional!"}
               </p>
               <div className="flex items-center gap-2">
                  <span className={cn(
                    "text-[10px] font-black tracking-widest uppercase",
-                   resumenValue?.length > MAX_RESUMEN * 0.9 ? "text-orange-500" : "text-dl-muted"
+                   resumenValue?.length > MAX_RESUMEN_LENGTH * 0.9 ? "text-orange-500" : "text-dl-muted"
                  )}>
-                   {resumenValue?.length || 0} / {MAX_RESUMEN}
+                   {resumenValue?.length || 0} / {MAX_RESUMEN_LENGTH}
                  </span>
               </div>
            </div>
@@ -396,4 +382,6 @@ export const StepExperience = ({ initialData, onNext, onBack, onSaveOnly }: Step
       </div>
     </form>
   );
-};
+});
+
+StepExperience.displayName = 'StepExperience';

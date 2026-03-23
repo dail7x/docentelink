@@ -33,6 +33,11 @@ export const resumes = sqliteTable('resumes', {
   photoProcessed: integer('photo_processed', { mode: 'boolean' }).default(false),
   photoFrame:     text('photo_frame').default('none'),
 
+  // Apariencia
+  theme:           text('theme').default('default'),
+  photoShape:     text('photo_shape').default('circle'),
+  photoBorder:    integer('photo_border', { mode: 'boolean' }).default(false),
+
   // Gamificación
   completionScore: integer('completion_score').default(0),    // 0–100
   isVerified:      integer('is_verified', { mode: 'boolean' }).default(false),

@@ -15,9 +15,9 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { syncClerkUserWithDb } from '@/lib/user';
-import { PrintCvButton } from '@/components/pdf/PrintCvButton';
+import { getThemeColors, getPhotoShapeClass, DEFAULT_THEME, DEFAULT_PHOTO_SHAPE, DEFAULT_PHOTO_BORDER } from '@/lib/themes';
+import { ThemeSelector } from '@/components/cv/ThemeSelector';
 
-// Format "YYYY-MM" → "Mar 2023" 
 export async function generateMetadata({ 
   params 
 }: { 
@@ -85,23 +85,21 @@ export default async function PublicCVPage({ params }: { params: Promise<{ usern
   const basics = jsonResume?.basics || {};
   const metaDocente = jsonResume?.meta?.docente || {};
   
-  // Checking visibility status
   const isPublic = resume.isPublic ?? false;
   const hiddenUntil = metaDocente.hiddenUntil ? new Date(metaDocente.hiddenUntil) : null;
   const isHiddenTemporarily = hiddenUntil && hiddenUntil > new Date();
   const isActuallyPublic = isPublic && !isHiddenTemporarily;
 
-  // Let owner bypass the visibility lock
   const user = await syncClerkUserWithDb().catch(() => null);
   const isOwner = user?.id === resume.userId;
 
   if (!isActuallyPublic && !isOwner) {
     return (
-      <div className="min-h-screen bg-dl-primary-bg flex items-center justify-center p-6">
-         <div className="max-w-md w-full text-center space-y-4 bg-white p-10 rounded-3xl shadow-lg border border-dl-primary-light/20">
-            <EyeOff className="w-12 h-12 text-dl-muted mx-auto mb-2 opacity-50" />
-            <h1 className="text-2xl font-black text-dl-primary-dark tracking-tight">Perfil no disponible</h1>
-            <p className="text-dl-muted text-sm font-bold leading-relaxed">Este perfil docente está oculto temporalmente o ha sido desactivado por su autor.</p>
+      <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: 'var(--dl-primary-bg, #f8fafc)' }}>
+         <div className="max-w-md w-full text-center space-y-4 p-10 rounded-3xl shadow-lg" style={{ backgroundColor: '#fff', borderColor: 'var(--dl-primary-light, #cbd5e1)' }}>
+            <EyeOff className="w-12 h-12 mx-auto mb-2 opacity-50" style={{ color: 'var(--dl-muted, #64748b)' }} />
+            <h1 className="text-2xl font-black tracking-tight" style={{ color: 'var(--dl-primary-dark, #1e293b)' }}>Perfil no disponible</h1>
+            <p className="text-sm font-bold leading-relaxed" style={{ color: 'var(--dl-muted, #64748b)' }}>Este perfil docente está oculto temporalmente o ha sido desactivado por su autor.</p>
          </div>
       </div>
     );
@@ -121,12 +119,53 @@ export default async function PublicCVPage({ params }: { params: Promise<{ usern
   const cursos = metaDocente.cursos || [];
   const resumenIA = metaDocente.resumen || "";
   const mostrarResumenPublico = metaDocente.mostrarResumenPublico ?? true;
-  const mostrarNivelesPublico = metaDocente.mostrarNivelesPublico ?? true;
   const mostrarTelPublico = metaDocente.mostrarTelPublico ?? false;
 
+  const themeId = (resume as any).theme || DEFAULT_THEME;
+  const photoShapeId = (resume as any).photoShape || DEFAULT_PHOTO_SHAPE;
+  const photoBorderEnabled = (resume as any).photoBorder ?? DEFAULT_PHOTO_BORDER;
+  const themeColors = getThemeColors(themeId);
+  const photoShapeClass = getPhotoShapeClass(photoShapeId);
+
   return (
-    <div className="bg-[#F8FAFC] min-h-screen pt-24 pb-20 px-4 md:px-6">
-      <div className="max-w-[820px] mx-auto space-y-6">
+    <div 
+      className="min-h-screen pt-24 pb-20 px-4 md:px-6"
+      style={{ backgroundColor: themeColors.bg }}
+    >
+      <style dangerouslySetInnerHTML={{ __html: `
+        :root {
+          --dl-primary: ${themeColors.primary};
+          --dl-primary-dark: ${themeColors.primaryDark};
+          --dl-primary-light: ${themeColors.primaryLight};
+          --dl-accent: ${themeColors.accent};
+          --dl-accent-mid: ${themeColors.accentMid};
+          --dl-primary-bg: ${themeColors.bg};
+          --dl-primary-bg-alt: ${themeColors.bgAlt};
+          --dl-muted: ${themeColors.muted};
+          --dl-primary-border: ${themeColors.border};
+        }
+        @media print {
+          body { background: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          .shadow-lg, .shadow-md { box-shadow: none !important; }
+          .rounded-3xl, .rounded-2xl, .rounded-xl { border-radius: 8px !important; }
+          .print\\:hidden { display: none !important; }
+          .print\\:block { display: block !important; }
+          .fixed { display: none !important; }
+        }
+      `}} />
+      
+      {isOwner && (
+        <div className="fixed left-4 top-24 z-40 w-64">
+          <ThemeSelector
+            resumeId={resume.id}
+            initialTheme={themeId}
+            initialPhotoShape={photoShapeId}
+            initialPhotoBorder={photoBorderEnabled}
+          />
+        </div>
+      )}
+
+      <div className="max-w-[820px] mx-auto space-y-4">
         
         {!isActuallyPublic && isOwner && (
           <div className="mb-4 bg-amber-100 text-amber-800 text-xs font-bold uppercase tracking-widest text-center py-3 px-4 rounded-xl border border-amber-200 shadow-sm animate-pulse">
@@ -134,14 +173,15 @@ export default async function PublicCVPage({ params }: { params: Promise<{ usern
           </div>
         )}
 
-        {/* Header Card */}
-        <header className="bg-white rounded-3xl overflow-hidden shadow-lg border border-dl-primary-light/10">
+        <header className="rounded-3xl overflow-hidden shadow-lg" style={{ backgroundColor: '#fff', border: '1px solid var(--dl-primary-light)', borderColor: 'color-mix(in srgb, var(--dl-primary) 15%, transparent)' }}>
           
-          {/* Top band: photo + name + title */}
           <div className="flex items-start gap-8 p-8 md:p-10">
             
-            {/* Foto — contained, no overflow */}
-            <div className="shrink-0 w-28 h-28 md:w-36 md:h-36 rounded-2xl overflow-hidden border-4 border-dl-primary-bg bg-dl-primary-bg relative">
+            <div 
+              data-profile-photo
+              className={`shrink-0 w-28 h-28 md:w-36 md:h-36 overflow-hidden border-4 relative ${photoShapeClass} ${photoBorderEnabled ? 'ring-4 ring-[var(--dl-accent)]' : ''}`}
+              style={{ backgroundColor: 'var(--dl-primary-bg)', borderColor: 'var(--dl-primary-light)' }}
+            >
               {foto ? (
                 <Image 
                   src={foto} 
@@ -150,29 +190,27 @@ export default async function PublicCVPage({ params }: { params: Promise<{ usern
                   style={{ objectFit: 'cover', objectPosition: 'center top' }}
                 />
               ) : (
-                <UserIcon className="w-12 h-12 text-dl-muted opacity-20 absolute inset-0 m-auto" />
+                <UserIcon className="w-12 h-12 opacity-20 absolute inset-0 m-auto" style={{ color: 'var(--dl-muted)' }} />
               )}
             </div>
 
-            {/* Name + title block */}
             <div className="flex-1 min-w-0 pt-1 space-y-2">
-              <h1 className="text-3xl md:text-4xl font-black text-dl-primary-dark tracking-tight leading-tight">
+              <h1 className="text-3xl md:text-4xl font-black tracking-tight leading-tight" style={{ color: 'var(--dl-primary-dark)' }}>
                 {nombre}
               </h1>
-              <p className="text-base font-bold text-dl-accent leading-snug">
+              <p className="text-base font-bold leading-snug" style={{ color: 'var(--dl-accent)' }}>
                 {profesion}
               </p>
               
-              {/* Localidades pills */}
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {provincia && (
-                  <span className="text-[9px] font-black uppercase tracking-widest text-dl-muted italic bg-dl-primary-bg px-2 py-1 rounded-md">
+                  <span className="text-[9px] font-black uppercase tracking-widest italic px-2 py-1 rounded-md" style={{ color: 'var(--dl-muted)', backgroundColor: 'var(--dl-primary-bg)' }}>
                     {provincia}
                   </span>
                 )}
                 {localidades.map((loc: string) => (
-                  <span key={loc} className="flex items-center gap-1 text-[9px] font-black uppercase tracking-tight text-dl-primary-dark bg-white border border-dl-primary-light/20 px-2 py-1 rounded-full shadow-sm">
-                    <MapPin className="w-2.5 h-2.5 text-dl-accent shrink-0" />
+                  <span key={loc} className="flex items-center gap-1 text-[9px] font-black uppercase tracking-tight px-2 py-1 rounded-full shadow-sm" style={{ color: 'var(--dl-primary-dark)', backgroundColor: '#fff', border: '1px solid color-mix(in srgb, var(--dl-primary) 15%, transparent)' }}>
+                    <MapPin className="w-2.5 h-2.5 shrink-0" style={{ color: 'var(--dl-accent)' }} />
                     {loc}
                   </span>
                 ))}
@@ -180,57 +218,50 @@ export default async function PublicCVPage({ params }: { params: Promise<{ usern
             </div>
           </div>
 
-          {/* Resumen — full width, minimal gap */}
           {mostrarResumenPublico && resumenIA && (
             <div className="px-8 md:px-10 pb-4 pt-1">
               <div className="flex items-start gap-3">
-                <Quote className="w-4 h-4 text-dl-accent/30 shrink-0 mt-0.5" />
-                <p className="text-sm font-medium text-dl-primary-dark/75 leading-relaxed italic text-justify">
+                <Quote className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'var(--dl-accent)', opacity: 0.3 }} />
+                <p className="text-sm font-medium leading-relaxed italic text-justify" style={{ color: 'var(--dl-primary-dark)', opacity: 0.75 }}>
                   {resumenIA}
                 </p>
               </div>
             </div>
           )}
 
-          {/* Contacto */}
-          <div className={`px-8 md:px-10 pb-7 flex flex-wrap justify-center gap-3 print:hidden ${
-            mostrarResumenPublico && resumenIA ? 'pt-0' : 'pt-5'
-          }`}>
+          <div className={`px-8 md:px-10 pb-7 flex flex-wrap justify-center gap-3 print:hidden ${mostrarResumenPublico && resumenIA ? 'pt-0' : 'pt-5'}`}>
             {email && (
-              <a href={`mailto:${email}`} className="flex items-center gap-2 px-4 py-2 bg-dl-primary-bg rounded-full text-xs font-black text-dl-primary-dark hover:bg-dl-accent hover:text-white transition-all border border-dl-primary-light/10">
+              <a href={`mailto:${email}`} className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-black transition-all" style={{ backgroundColor: 'var(--dl-primary-bg)', color: 'var(--dl-primary-dark)', border: '1px solid color-mix(in srgb, var(--dl-primary) 10%, transparent)' }}>
                 <Mail className="w-3.5 h-3.5" /> {email}
               </a>
             )}
             {mostrarTelPublico && telefono && (
-              <a href={`https://wa.me/${telefono.replace(/\+/g, '').replace(/\s/g, '')}`} target="_blank" className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-full text-xs font-black text-green-700 hover:bg-green-500 hover:text-white transition-all border border-green-100">
+              <a href={`https://wa.me/${telefono.replace(/\+/g, '').replace(/\s/g, '')}`} target="_blank" className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-black transition-all" style={{ backgroundColor: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' }}>
                 <Phone className="w-3.5 h-3.5" /> WhatsApp
               </a>
             )}
           </div>
-          {/* Print contact */}
-          <div className="hidden print:block px-10 pb-6 text-xs font-bold text-dl-muted space-y-1">
+          <div className="hidden print:block px-10 pb-6 text-xs font-bold space-y-1" style={{ color: 'var(--dl-muted)' }}>
             {email && <p>Email: {email}</p>}
             {telefono && <p>Tel: {telefono}</p>}
           </div>
         </header>
 
-        {/* Body: on mobile Experiencia first, sidebar second */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start mt-6">
            
-          {/* Sidebar — appears 2nd on mobile (order-last), right column on desktop */}
           <div className="md:col-span-4 space-y-6 order-last md:order-first">
             {formacion.length > 0 && (
-              <section className="bg-white rounded-3xl p-7 shadow-md border border-dl-primary-light/5">
-                <h2 className="text-[10px] font-black text-dl-primary-dark uppercase tracking-[0.2em] mb-5 flex items-center gap-2">
-                  <GraduationCap className="w-4 h-4 text-dl-accent" /> Formación
+              <section className="rounded-3xl p-7 shadow-md" style={{ backgroundColor: '#fff', border: '1px solid color-mix(in srgb, var(--dl-primary) 5%, transparent)' }}>
+                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] mb-5 flex items-center gap-2" style={{ color: 'var(--dl-primary-dark)' }}>
+                  <GraduationCap className="w-4 h-4" style={{ color: 'var(--dl-accent)' }} /> Formación
                 </h2>
                 <div className="space-y-5">
                   {formacion.map((edu: any, i: number) => (
                     <div key={i} className="space-y-0.5">
-                      <p className="text-sm font-black text-dl-primary-dark leading-tight">{edu.area || edu.titulo || edu.degree}</p>
-                      <p className="text-[10px] font-bold text-dl-muted uppercase tracking-tight leading-snug">{edu.institution || edu.institucion}</p>
+                      <p className="text-sm font-black leading-tight" style={{ color: 'var(--dl-primary-dark)' }}>{edu.area || edu.titulo || edu.degree}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-tight leading-snug" style={{ color: 'var(--dl-muted)' }}>{edu.institution || edu.institucion}</p>
                       {(edu.year || edu.anio || edu.endDate) && (
-                        <p className="text-[10px] font-black text-dl-accent">{edu.year || edu.anio || edu.endDate}</p>
+                        <p className="text-[10px] font-black" style={{ color: 'var(--dl-accent)' }}>{edu.year || edu.anio || edu.endDate}</p>
                       )}
                     </div>
                   ))}
@@ -239,16 +270,15 @@ export default async function PublicCVPage({ params }: { params: Promise<{ usern
             )}
 
             {cursos.length > 0 && (
-              <section className="bg-dl-primary-dark rounded-3xl p-7 shadow-md text-white">
-                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] mb-5 text-dl-accent flex items-center gap-2">
+              <section className="rounded-3xl p-7 shadow-md" style={{ backgroundColor: 'var(--dl-primary-dark)', color: '#fff' }}>
+                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] mb-5 flex items-center gap-2" style={{ color: 'var(--dl-accent)' }}>
                   <Award className="w-4 h-4" /> Cursos
                 </h2>
                 <div className="space-y-4">
                   {cursos.map((c: any, i: number) => (
-                    <div key={i} className="border-l-2 border-dl-accent/30 pl-3">
+                    <div key={i} className="border-l-2 pl-3" style={{ borderColor: 'var(--dl-accent)', opacity: 0.3 }}>
                       <p className="text-[10px] font-black uppercase leading-snug">{c.nombre}</p>
-                      {/* FIX: break-words, no truncate */}
-                      <p className="text-[9px] font-bold text-white/50 mt-1 uppercase leading-tight break-words whitespace-normal">
+                      <p className="text-[9px] font-bold mt-1 uppercase leading-tight break-words whitespace-normal" style={{ opacity: 0.5 }}>
                         {c.institucion}
                       </p>
                     </div>
@@ -258,44 +288,42 @@ export default async function PublicCVPage({ params }: { params: Promise<{ usern
             )}
           </div>
 
-          {/* Main content */}
           <div className="md:col-span-8 space-y-6">
             {experiencia.length > 0 && (
-              <section className="bg-white rounded-3xl p-7 md:p-9 shadow-md border border-dl-primary-light/10">
-                <h2 className="text-lg font-black text-dl-primary-dark mb-7 flex items-center gap-3">
+              <section className="rounded-3xl p-7 md:p-9 shadow-md" style={{ backgroundColor: '#fff', border: '1px solid color-mix(in srgb, var(--dl-primary) 10%, transparent)' }}>
+                <h2 className="text-lg font-black mb-7 flex items-center gap-3" style={{ color: 'var(--dl-primary-dark)' }}>
                   Trayectoria Docente
-                  <Briefcase className="w-5 h-5 text-dl-accent opacity-30" />
+                  <Briefcase className="w-5 h-5" style={{ color: 'var(--dl-accent)', opacity: 0.3 }} />
                 </h2>
 
                 <div className="space-y-8 relative">
-                  <div className="absolute left-0 top-2 bottom-0 w-0.5 bg-dl-primary-bg rounded-full hidden md:block" />
+                  <div className="absolute left-0 top-2 bottom-0 w-0.5 rounded-full hidden md:block" style={{ backgroundColor: 'var(--dl-primary-bg)' }} />
 
                   {experiencia.map((exp: any, i: number) => {
                     const desde = formatDate(exp.startDate || exp.desde);
                     const hasta = formatDate(exp.endDate || exp.hasta);
                     return (
                       <div key={i} className="relative md:pl-7 group">
-                        <div className="absolute left-[-3.5px] top-2 w-2 h-2 rounded-full bg-dl-primary-bg border-2 border-white group-hover:bg-dl-accent transition-all hidden md:block z-10" />
+                        <div className="absolute left-[-3.5px] top-2 w-2 h-2 rounded-full border-2 transition-all hidden md:block z-10" style={{ backgroundColor: 'var(--dl-primary-bg)', borderColor: '#fff' }} />
                         
                         <div className="space-y-2">
                           <div className="flex flex-col md:flex-row md:items-start justify-between gap-1">
-                            <h3 className="text-base font-black text-dl-primary-dark group-hover:text-dl-accent transition-colors leading-tight">
+                            <h3 className="text-base font-black leading-tight transition-colors" style={{ color: 'var(--dl-primary-dark)' }}>
                               {exp.position || exp.cargo}
                             </h3>
-                            {/* FIX: w-fit to prevent full-width stretch on mobile */}
-                            <span className="text-[9px] font-black uppercase tracking-widest text-dl-accent bg-dl-accent/5 px-2 py-1 rounded-md w-fit">
+                            <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md w-fit" style={{ color: 'var(--dl-accent)', backgroundColor: 'color-mix(in srgb, var(--dl-accent) 5%, transparent)' }}>
                               {desde} — {hasta}
                             </span>
                           </div>
                           
-                          <p className="text-[10px] font-bold text-dl-muted uppercase tracking-tight">
+                          <p className="text-[10px] font-bold uppercase tracking-tight" style={{ color: 'var(--dl-muted)' }}>
                             {exp.name || exp.institucion}
                           </p>
 
                           {(exp.summary || exp.descripcion) && (
-                            <div className="bg-dl-primary-bg/30 p-4 rounded-xl border-l-2 border-dl-primary-light/20 mt-2">
-                              <p className="text-xs font-medium text-dl-primary-dark/70 leading-relaxed italic">
-                                "{exp.summary || exp.descripcion}"
+                            <div className="p-4 rounded-xl mt-2" style={{ backgroundColor: 'color-mix(in srgb, var(--dl-primary-bg) 30%, transparent)', borderLeft: '2px solid color-mix(in srgb, var(--dl-primary) 20%, transparent)' }}>
+                              <p className="text-xs font-medium leading-relaxed italic" style={{ color: 'var(--dl-primary-dark)', opacity: 0.7 }}>
+                                &ldquo;{exp.summary || exp.descripcion}&rdquo;
                               </p>
                             </div>
                           )}
@@ -309,52 +337,12 @@ export default async function PublicCVPage({ params }: { params: Promise<{ usern
           </div>
         </div>
 
-        <footer className="text-center pt-8 text-dl-muted/50 print:hidden">
+        <footer className="text-center pt-8" style={{ color: 'var(--dl-muted)', opacity: 0.5 }}>
           <p className="text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
-            Perfil verificado en <span className="text-dl-accent">docentelink.ar</span>
+            Perfil verificado en <span style={{ color: 'var(--dl-accent)' }}>docentelink.ar</span>
           </p>
         </footer>
       </div>
-
-      {/* Botón flotante fuera del contenedor del perfil */}
-      <PrintCvButton username={nombre} variant="floating" />
-
-      <style dangerouslySetInnerHTML={{ __html: `
-        @media print {
-          body { 
-            background: white !important; 
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          .bg-[#F8FAFC] { background: white !important; }
-          .shadow-lg, .shadow-md { box-shadow: none !important; }
-          .rounded-3xl, .rounded-2xl, .rounded-xl { border-radius: 8px !important; }
-          .print\\:hidden { display: none !important; }
-          .print\\:block { display: block !important; }
-          
-          /* Optimizaciones para el CV */
-          .printing-cv header { 
-            page-break-inside: avoid; 
-            break-inside: avoid;
-          }
-          .printing-cv section { 
-            page-break-inside: avoid; 
-            break-inside: avoid;
-            margin-bottom: 20px !important;
-          }
-          
-          /* Asegurar que los colores se impriman */
-          * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-        }
-        
-        /* Ocultar botón flotante en impresión */
-        @media print {
-          .fixed { display: none !important; }
-        }
-      `}} />
     </div>
   );
 }
