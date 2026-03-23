@@ -1,12 +1,32 @@
 # Changelog
 
-## [Unreleased] - Theme Selector Feature + Bug Fix
+## [Unreleased] - Theme Selector Improvements
+
+### Added
+
+- **10 Temas de Color** (original DocenteLink + 9 variantes)
+  - DocenteLink (original), Clásico, Océano, Atardecer, Bosque, Royal, Mármol, Coral, Cielo, Rosa
+  - Preview con dos colores en diagonal (primary + accent)
+  - Botón más visible (más saturado, no pastel)
+
+- **Hover Effects** en títulos
+  - Formación: cambio de color al hacer hover
+  - Trayectoria Docente: cambio de color al hacer hover
+
+### Fixed
+
+- **Contraste en Cursos**: Títulos ahora usan blanco sobre fondo oscuro
+- **Theme Selector**: Contenedor ensanchado (w-72) para que "Redondeado" no desborde
+
+---
+
+## Theme Selector Feature + Bug Fix
 
 ### Added
 
 - **Theme Selector Feature**
-  - 5 temas de color: Default (Azul), Ocean (Verde azulado), Sunset (Naranja), Forest (Verde), Royal (Púrpura)
-  - 3 formas de foto: Círculo, Cuadrado, Esquinas redondeadas
+  - 10 temas de color
+  - 3 formas de foto: Círculo, Cuadrado, Redondeado
   - Toggle para borde de foto
   - Preview en vivo con CSS variables
   - Selector visible solo para el dueño del perfil

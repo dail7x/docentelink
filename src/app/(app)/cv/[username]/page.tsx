@@ -252,16 +252,16 @@ export default async function PublicCVPage({ params }: { params: Promise<{ usern
           <div className="md:col-span-4 space-y-6 order-last md:order-first">
             {formacion.length > 0 && (
               <section className="rounded-3xl p-7 shadow-md" style={{ backgroundColor: '#fff', border: '1px solid color-mix(in srgb, var(--dl-primary) 5%, transparent)' }}>
-                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] mb-5 flex items-center gap-2" style={{ color: 'var(--dl-primary-dark)' }}>
+                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] mb-5 flex items-center gap-2 group-hover:transition-colors" style={{ color: 'var(--dl-primary-dark)' }}>
                   <GraduationCap className="w-4 h-4" style={{ color: 'var(--dl-accent)' }} /> Formación
                 </h2>
                 <div className="space-y-5">
                   {formacion.map((edu: any, i: number) => (
-                    <div key={i} className="space-y-0.5">
-                      <p className="text-sm font-black leading-tight" style={{ color: 'var(--dl-primary-dark)' }}>{edu.area || edu.titulo || edu.degree}</p>
+                    <div key={i} className="space-y-0.5 group">
+                      <p className="text-sm font-black leading-tight transition-colors group-hover:text-dl-accent" style={{ color: 'var(--dl-primary-dark)' }}>{edu.area || edu.titulo || edu.degree}</p>
                       <p className="text-[10px] font-bold uppercase tracking-tight leading-snug" style={{ color: 'var(--dl-muted)' }}>{edu.institution || edu.institucion}</p>
                       {(edu.year || edu.anio || edu.endDate) && (
-                        <p className="text-[10px] font-black" style={{ color: 'var(--dl-accent)' }}>{edu.year || edu.anio || edu.endDate}</p>
+                        <p className="text-[10px] font-black transition-colors group-hover:text-dl-accent" style={{ color: 'var(--dl-accent)' }}>{edu.year || edu.anio || edu.endDate}</p>
                       )}
                     </div>
                   ))}
@@ -276,9 +276,9 @@ export default async function PublicCVPage({ params }: { params: Promise<{ usern
                 </h2>
                 <div className="space-y-4">
                   {cursos.map((c: any, i: number) => (
-                    <div key={i} className="border-l-2 pl-3" style={{ borderColor: 'var(--dl-accent)', opacity: 0.3 }}>
-                      <p className="text-[10px] font-black uppercase leading-snug">{c.nombre}</p>
-                      <p className="text-[9px] font-bold mt-1 uppercase leading-tight break-words whitespace-normal" style={{ opacity: 0.5 }}>
+                    <div key={i} className="border-l-2 pl-3" style={{ borderColor: 'var(--dl-accent)', opacity: 0.4 }}>
+                      <p className="text-[10px] font-black uppercase leading-snug" style={{ color: '#fff' }}>{c.nombre}</p>
+                      <p className="text-[9px] font-bold mt-1 uppercase leading-tight break-words whitespace-normal" style={{ color: 'var(--dl-primary-light)', opacity: 0.8 }}>
                         {c.institucion}
                       </p>
                     </div>
@@ -308,15 +308,15 @@ export default async function PublicCVPage({ params }: { params: Promise<{ usern
                         
                         <div className="space-y-2">
                           <div className="flex flex-col md:flex-row md:items-start justify-between gap-1">
-                            <h3 className="text-base font-black leading-tight transition-colors" style={{ color: 'var(--dl-primary-dark)' }}>
+                            <h3 className="text-base font-black leading-tight transition-colors group-hover:text-dl-accent" style={{ color: 'var(--dl-primary-dark)' }}>
                               {exp.position || exp.cargo}
                             </h3>
-                            <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md w-fit" style={{ color: 'var(--dl-accent)', backgroundColor: 'color-mix(in srgb, var(--dl-accent) 5%, transparent)' }}>
+                            <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md w-fit transition-colors group-hover:text-dl-accent" style={{ color: 'var(--dl-accent)', backgroundColor: 'color-mix(in srgb, var(--dl-accent) 5%, transparent)' }}>
                               {desde} — {hasta}
                             </span>
                           </div>
                           
-                          <p className="text-[10px] font-bold uppercase tracking-tight" style={{ color: 'var(--dl-muted)' }}>
+                          <p className="text-[10px] font-bold uppercase tracking-tight transition-colors group-hover:text-dl-accent" style={{ color: 'var(--dl-muted)' }}>
                             {exp.name || exp.institucion}
                           </p>
 

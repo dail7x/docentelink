@@ -95,8 +95,10 @@ export function ThemeSelector({
     }
   };
 
+  const themeEntries = Object.values(THEMES);
+
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-5 space-y-5 w-64 shrink-0">
+    <div className="bg-white rounded-2xl shadow-lg p-5 space-y-5 w-72 shrink-0">
       <div className="flex items-center gap-2 pb-3 border-b" style={{ borderColor: 'color-mix(in srgb, var(--dl-primary) 20%, transparent)' }}>
         <Palette className="w-4 h-4" style={{ color: 'var(--dl-accent)' }} />
         <h3 className="font-black uppercase text-[10px] tracking-wider" style={{ color: 'var(--dl-primary-dark)' }}>
@@ -109,31 +111,30 @@ export function ThemeSelector({
           Color del tema
         </label>
         <div className="grid grid-cols-5 gap-1.5">
-          {Object.values(THEMES).map((t) => (
+          {themeEntries.map((t) => (
             <button
               key={t.id}
               onClick={() => handleThemeChange(t.id)}
-              className={cn(
-                'w-9 h-9 rounded-lg border-2 transition-all hover:scale-105',
-                theme === t.id 
-                  ? 'ring-2' 
-                  : 'hover:border-dl-accent'
-              )}
+              className="w-10 h-10 rounded-lg border-2 transition-all hover:scale-105 relative overflow-hidden"
               style={{ 
-                backgroundColor: t.colors.bg,
-                borderColor: theme === t.id ? 'var(--dl-primary-dark)' : 'color-mix(in srgb, var(--dl-primary) 30%, transparent)',
-                ['--tw-ring-color' as string]: 'color-mix(in srgb, var(--dl-accent) 50%, transparent)'
+                borderColor: theme === t.id ? t.colors.primaryDark : 'color-mix(in srgb, var(--dl-primary) 30%, transparent)',
+                boxShadow: theme === t.id ? `0 0 0 2px var(--dl-accent)` : 'none',
               }}
               title={t.name}
             >
+              <div className="absolute inset-0" style={{ backgroundColor: t.colors.primary }} />
+              <div className="absolute inset-0" style={{ 
+                clipPath: 'polygon(0 0, 100% 0, 100% 100%)',
+                backgroundColor: t.colors.accent 
+              }} />
               {theme === t.id && (
-                <Check className="w-3.5 h-3.5 mx-auto" style={{ color: 'var(--dl-primary-dark)' }} />
+                <Check className="absolute inset-0 m-auto w-4 h-4 z-10" style={{ color: '#fff', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))' }} />
               )}
             </button>
           ))}
         </div>
         <p className="text-[9px] font-bold text-center" style={{ color: 'var(--dl-muted)' }}>
-          {THEMES[theme]?.name || 'Default'}
+          {THEMES[theme]?.name || 'DocenteLink'}
         </p>
       </div>
 

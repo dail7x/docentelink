@@ -23,9 +23,24 @@ export interface ThemePreset {
 }
 
 export const THEMES: Record<string, ThemePreset> = {
+  docenteLink: {
+    id: 'docenteLink',
+    name: 'DocenteLink',
+    colors: {
+      primary: '#534AB7',
+      primaryDark: '#3C3489',
+      primaryLight: '#EEEDFE',
+      accent: '#1D9E75',
+      accentMid: '#5DCAA5',
+      bg: '#F5F4FE',
+      bgAlt: '#ECEAFF',
+      muted: '#5F5E5A',
+      border: '#D4D1F5',
+    },
+  },
   default: {
     id: 'default',
-    name: 'Default',
+    name: 'Clásico',
     colors: {
       primary: '#1e1b4b',
       primaryDark: '#1e1b4b',
@@ -40,7 +55,7 @@ export const THEMES: Record<string, ThemePreset> = {
   },
   ocean: {
     id: 'ocean',
-    name: 'Ocean',
+    name: 'Océano',
     colors: {
       primary: '#0f766e',
       primaryDark: '#115e59',
@@ -55,7 +70,7 @@ export const THEMES: Record<string, ThemePreset> = {
   },
   sunset: {
     id: 'sunset',
-    name: 'Sunset',
+    name: 'Atardecer',
     colors: {
       primary: '#c2410c',
       primaryDark: '#9a3412',
@@ -70,7 +85,7 @@ export const THEMES: Record<string, ThemePreset> = {
   },
   forest: {
     id: 'forest',
-    name: 'Forest',
+    name: 'Bosque',
     colors: {
       primary: '#166534',
       primaryDark: '#14532d',
@@ -98,16 +113,76 @@ export const THEMES: Record<string, ThemePreset> = {
       border: '#e9d5ff',
     },
   },
+  marble: {
+    id: 'marble',
+    name: 'Mármol',
+    colors: {
+      primary: '#1f2937',
+      primaryDark: '#111827',
+      primaryLight: '#f3f4f6',
+      accent: '#6b7280',
+      accentMid: '#4b5563',
+      bg: '#f9fafb',
+      bgAlt: '#e5e7eb',
+      muted: '#374151',
+      border: '#d1d5db',
+    },
+  },
+  coral: {
+    id: 'coral',
+    name: 'Coral',
+    colors: {
+      primary: '#be123c',
+      primaryDark: '#9f1239',
+      primaryLight: '#ffe4e6',
+      accent: '#fb7185',
+      accentMid: '#f43f5e',
+      bg: '#fff1f2',
+      bgAlt: '#ffe4e6',
+      muted: '#881337',
+      border: '#fecdd3',
+    },
+  },
+  sky: {
+    id: 'sky',
+    name: 'Cielo',
+    colors: {
+      primary: '#0369a1',
+      primaryDark: '#075985',
+      primaryLight: '#e0f2fe',
+      accent: '#38bdf8',
+      accentMid: '#0ea5e9',
+      bg: '#f0f9ff',
+      bgAlt: '#e0f2fe',
+      muted: '#0c4a6e',
+      border: '#bae6fd',
+    },
+  },
+  rose: {
+    id: 'rose',
+    name: 'Rosa',
+    colors: {
+      primary: '#9d174d',
+      primaryDark: '#831843',
+      primaryLight: '#fce7f3',
+      accent: '#f472b6',
+      accentMid: '#ec4899',
+      bg: '#fdf2f8',
+      bgAlt: '#fce7f3',
+      muted: '#831843',
+      border: '#fbcfe8',
+    },
+  },
 };
 
 export type ThemeId = keyof typeof THEMES;
 
-export const DEFAULT_THEME = 'default';
+export const DEFAULT_THEME = 'docenteLink';
 export const DEFAULT_PHOTO_SHAPE = 'circle';
 export const DEFAULT_PHOTO_BORDER = false;
 
 export function getThemeColors(themeId: string): ThemePreset['colors'] {
-  return THEMES[themeId]?.colors || THEMES.default.colors;
+  return THEMES[themeId]?.colors || THEMES.docenteLink.colors;
 }
 
 export function getPhotoShapeClass(shapeId: string): string {
