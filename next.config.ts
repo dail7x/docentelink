@@ -4,15 +4,6 @@ const nextConfig: NextConfig = {
   // Required for self-hosting in Coolify
   output: 'standalone',
   
-  // Turbopack config (replaces webpack)
-  turbopack: {
-    resolveAlias: {
-      // Exclude @react-pdf/renderer from client-side bundling
-      // It's only used in server-side API routes
-      '@react-pdf/renderer': 'next/dist/compiled/node-module-polyfill/empty.js',
-    },
-  },
-  
   images: {
     remotePatterns: [
       {
