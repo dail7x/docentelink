@@ -2,6 +2,7 @@ import React from 'react';
 import { getPublicResumeAction } from '@/app/actions/get-public-cv';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { 
   Mail, 
   Phone, 
@@ -25,6 +26,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { username } = await params;
   
+  const headersList = await headers();
+  const host = headersList.get('host') || 'localhost:3000';
+  const protocol = headersList.get('x-forwarded-proto') || 'http';
+  const baseUrl = `${protocol}://${host}`;
+
   try {
     const resume = await getPublicResumeAction(username);
     
@@ -45,14 +51,14 @@ export async function generateMetadata({
       openGraph: {
         title: `${name} — ${titulo}`,
         description: `Perfil profesional de ${name}, ${titulo}${provincia ? ` en ${provincia}` : ''}.`,
-        images: [`/api/og/${username}`],
+        images: [`${baseUrl}/api/og/${username}`],
         type: 'profile',
       },
       twitter: {
         card: 'summary_large_image',
         title: `${name} — ${titulo}`,
         description: `Perfil profesional de ${name}`,
-        images: [`/api/og/${username}`],
+        images: [`${baseUrl}/api/og/${username}`],
       },
     };
   } catch (error) {
