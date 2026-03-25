@@ -182,7 +182,7 @@ export function PreviewButton({
                 </div>
 
                 {/* Metadatos OG Preview - como aparece en WhatsApp */}
-                <div className="w-full max-w-[500px] mx-auto mt-3 bg-white rounded-lg p-3 shadow-sm border-l-4 border-[#534ab7]">
+                <div className="w-full max-w-[500px] mx-auto mt-[1px] bg-white rounded-b-lg p-3 shadow-sm border-l-4 border-[#534ab7] border-t border-gray-100">
                   {/* Título OG */}
                   <p className="text-sm font-semibold text-[#1a1a2e] line-clamp-1">
                     {name || 'Docente'} | {title || 'Perfil Profesional'} | Perfil en DocenteLink
