@@ -13,6 +13,7 @@ import {
   DIAS_SEMANA,
   DISPONIBILIDAD_OPCIONES,
 } from '@/data/education';
+import { OgPreviewCard } from './OgPreviewCard';
 
 const ToggleSwitch = memo(({ checked, onChange }: { checked: boolean; onChange: () => void }) => (
   <button
@@ -65,12 +66,29 @@ export const StepIdentity = memo(({ initialData, onFinish, onBack, onSaveOnly }:
   const [locInput, setLocInput] = useState('');
   const [showMatSug, setShowMatSug] = useState(false);
   const [showLocSug, setShowLocSug] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   const matRef = useRef<HTMLDivElement>(null);
   const locRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (showPreviewModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showPreviewModal]);
+
   const onSubmit = (data: Record<string, unknown>) => {
-    onFinish?.(data as Partial<Record<string, unknown>> & { [key: string]: unknown });
+    setShowPreviewModal(true);
+  };
+
+  const handleConfirmFinish = () => {
+    const formData = watch();
+    onFinish?.(formData as Partial<Record<string, unknown>> & { [key: string]: unknown });
   };
 
   const toggleNivel = (id: string) => {
@@ -147,11 +165,12 @@ export const StepIdentity = memo(({ initialData, onFinish, onBack, onSaveOnly }:
   }, []);
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-700 pb-10"
-    >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <>
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-700 pb-10"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="space-y-4">
           <label className="text-[10px] font-black uppercase tracking-widest text-dl-muted pl-2">
             Titulo Habilitante
@@ -485,6 +504,60 @@ export const StepIdentity = memo(({ initialData, onFinish, onBack, onSaveOnly }:
         </div>
       </div>
     </form>
+
+    {showPreviewModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col">
+          <div className="p-6 border-b flex items-center justify-between shrink-0">
+            <div>
+              <h2 className="text-xl font-black text-dl-primary-dark">
+                Así se verá tu perfil
+              </h2>
+              <p className="text-sm text-dl-muted">
+                Vista previa de WhatsApp
+              </p>
+            </div>
+            <button
+              onClick={() => setShowPreviewModal(false)}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+          
+          <div className="flex-1 overflow-auto p-6 flex items-start justify-center bg-gray-50">
+            <div className="transform scale-50 sm:scale-65 md:scale-75 lg:scale-85 origin-top">
+              <OgPreviewCard
+                name={`${initialData?.nombre || ''} ${initialData?.apellido || ''}`.trim() || 'Nombre del Docente'}
+                title={watch('tituloHabilitante') || 'Título Profesional'}
+                province={watch('provincia') || watch('localidades')?.[0] || ''}
+                image={initialData?.photoUrl}
+                isVerified={false}
+                especialidadDestacada={selectedMaterias?.[0] || undefined}
+                especialidadesPills={selectedMaterias || []}
+                aliasPerfil={initialData?.slug || undefined}
+              />
+            </div>
+          </div>
+
+          <div className="p-4 border-t flex items-center justify-between gap-4 shrink-0 bg-white">
+            <button
+              onClick={() => setShowPreviewModal(false)}
+              className="px-4 py-2 text-sm font-bold text-dl-muted hover:text-dl-primary-dark transition-colors"
+            >
+              ← Editar
+            </button>
+            <button
+              onClick={handleConfirmFinish}
+              className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold bg-dl-accent text-white rounded-lg shadow-lg hover:bg-dl-accent-dark transition-colors"
+            >
+              Confirmar y Publicar <CheckCircle2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 });
 

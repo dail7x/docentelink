@@ -107,8 +107,9 @@ function CreateCvContent() {
   const handleFinish = async (finalData: Partial<WizardFormData>) => {
     try {
       setIsSubmitting(true);
-      const fullData = { ...formData, ...finalData, parsedFromPdf: !!parsedData };
+      const fullData = { ...formData, ...finalData, parsedFromPdf: !!parsedData, skipRedirect: true };
       await saveResumeAction(fullData);
+      window.location.href = '/dashboard?status=success';
       return true;
     } catch (error: unknown) {
       const err = error as { message?: string; digest?: string };

@@ -115,7 +115,9 @@ export async function saveResumeAction(formData: any) {
     throw new Error(dbError.message || "Error al guardar en la base de datos");
   }
 
-  if (!formData.isAutosave) {
+  const skipRedirect = (formData as any).skipRedirect || formData.isAutosave;
+  
+  if (!skipRedirect) {
     redirect(`/dashboard?status=success`);
   }
 }

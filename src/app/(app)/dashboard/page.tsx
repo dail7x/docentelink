@@ -11,6 +11,7 @@ import { resumes } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { cn } from "@/lib/utils";
 import { ProfileVisibilityManager } from "@/components/dashboard/ProfileVisibilityManager";
+import { PreviewButton } from "@/components/dashboard/PreviewButton";
 
 export default async function DashboardPage() {
   const user = await syncClerkUserWithDb();
@@ -24,6 +25,13 @@ export default async function DashboardPage() {
     where: eq(resumes.userId, user.id),
   });
 
+  // Extraer datos del perfil para mostrar
+  const cvData = userResume?.jsonResume as any;
+  const profileName = cvData?.basics?.name || user.name || 'Docente';
+  const profileImage = cvData?.basics?.image;
+  const meta = cvData?.meta?.docente || {};
+  const firstName = profileName?.split(' ')[0] || 'Docente';
+
   return (
     <div className="max-w-7xl mx-auto px-6 py-12 space-y-12">
       {/* Header Sección */}
@@ -34,10 +42,10 @@ export default async function DashboardPage() {
             Panel de Control
           </div>
           <h1 className="text-4xl font-extrabold text-dl-primary-dark tracking-tight">
-            ¡Hola, <span className="text-dl-primary">{user.name?.split(' ')[0]}</span>! 👋
+            ¡Hola, <span className="text-dl-primary">{firstName}</span>! 👋
           </h1>
           <p className="text-lg text-dl-muted font-medium">
-            {userResume 
+            {userResume
               ? "Tu trayectoria ya está online. Seguí mejorando tu perfil."
               : "Tu trayectoria docente merece ser vista. ¿Empezamos un nuevo CV?"}
           </p>
@@ -60,7 +68,7 @@ export default async function DashboardPage() {
         {/* Mi Link/Perfil */}
         <div className="lg:col-span-2 space-y-6">
           <h2 className="text-2xl font-bold text-dl-primary-dark tracking-tight">Mi Perfil Profesional</h2>
-          
+
           <div className="p-10 rounded-[2.5rem] bg-white border-2 border-dl-primary-light/30 shadow-sm space-y-8">
              {userResume ? (
                <div className="space-y-8">
@@ -74,17 +82,29 @@ export default async function DashboardPage() {
                            <p className="text-dl-muted font-bold text-sm">docentelink.ar/cv/{userResume.username}</p>
                         </div>
                      </div>
-                     <div className="flex items-center gap-2 flex-wrap">
-                        <Link href={`/cv/${userResume.username}`} target="_blank">
-                           <Button variant="ghost" size="sm" className="font-bold">
-                              <ExternalLink className="w-4 h-4 mr-2" /> Ver público
-                           </Button>
-                        </Link>
-                        <Link href="/cv/create?edit=true">
-                           <Button variant="outline" size="sm" className="font-bold">
-                              <Edit3 className="w-4 h-4 mr-2" /> Editar
-                           </Button>
-                        </Link>
+                     <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                           <Link href={`/cv/${userResume.username}`} target="_blank">
+                              <Button variant="ghost" size="sm" className="font-bold">
+                                 <ExternalLink className="w-4 h-4 mr-2" /> Ver perfil público
+                              </Button>
+                           </Link>
+                           <Link href="/cv/create?edit=true">
+                              <Button variant="outline" size="sm" className="font-bold">
+                                 <Edit3 className="w-4 h-4 mr-2" /> Editar
+                              </Button>
+                           </Link>
+                        </div>
+                        <PreviewButton
+                          name={profileName}
+                          title={meta.tituloHabilitante || cvData?.basics?.label || 'Docente Profesional'}
+                          province={meta.provincia || ''}
+                          image={profileImage}
+                          isVerified={meta.isVerified || false}
+                          especialidadDestacada={meta.materias?.[0]}
+                          especialidadesPills={meta.materias || []}
+                          aliasPerfil={userResume.username}
+                        />
                      </div>
                   </div>
 
@@ -97,7 +117,7 @@ export default async function DashboardPage() {
                         </p>
                      </div>
                      <div className="md:col-span-2">
-                       <ProfileVisibilityManager 
+                       <ProfileVisibilityManager
                          resumeId={userResume.id}
                          isPublic={userResume.isPublic ?? false}
                          hiddenUntil={(userResume.jsonResume.meta as any)?.docente?.hiddenUntil ?? null}
@@ -126,10 +146,10 @@ export default async function DashboardPage() {
         {/* Sidebar: Gamificación */}
         <div className="space-y-8">
           <h2 className="text-2xl font-bold text-dl-primary-dark tracking-tight">Gamificación</h2>
-          
+
           <div className="p-8 rounded-[2rem] bg-dl-primary text-white shadow-xl space-y-6 relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2 group-hover:scale-110 transition-transform duration-500" />
-            
+
             <div className="relative z-10 space-y-4">
                <div className="flex items-center justify-between">
                   <span className="text-sm font-bold uppercase tracking-widest opacity-80">Progreso total</span>
@@ -138,14 +158,14 @@ export default async function DashboardPage() {
                   </span>
                </div>
                <div className="h-4 bg-white/20 rounded-full overflow-hidden border border-white/10">
-                  <div 
-                    className="h-full bg-dl-accent transition-all duration-1000" 
+                  <div
+                    className="h-full bg-dl-accent transition-all duration-1000"
                     style={{ width: `${userResume ? (userResume.completionScore || 0) : 0}%` }}
                   />
                </div>
                <p className="text-xs font-medium opacity-70 leading-relaxed italic">
-                 {userResume 
-                   ? "¡Excelente! Casi terminas tu perfil estelar." 
+                 {userResume
+                   ? "¡Excelente! Casi terminas tu perfil estelar."
                    : "Sincroniza tu CV y completa los campos faltantes para subir de nivel."}
                </p>
             </div>
@@ -170,7 +190,7 @@ export default async function DashboardPage() {
               ))}
             </div>
           </div>
-          
+
           <Button variant="outline" className="w-full font-bold group">
              <Share2 className="mr-2 w-4 h-4 group-hover:scale-110 transition-transform" />
              Compartir DocenteLink
