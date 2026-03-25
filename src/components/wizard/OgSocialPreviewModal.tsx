@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { OgPreviewCard } from "@/components/wizard/OgPreviewCard";
 import { X as XIcon, Share2, Copy, Check, MessageCircle, Facebook, Linkedin, Twitter, Loader2 } from "lucide-react";
-import { toPng } from "html-to-image";
+import { toJpeg } from "html-to-image";
 import { uploadFiles } from "@/lib/uploadthing";
 
 export type SocialNetwork = 'whatsapp' | 'facebook' | 'linkedin' | 'x';
@@ -77,7 +77,8 @@ export function OgSocialPreviewModal({
       try {
         setIsCapturing(true);
         // Force rendering at 1x scale for capture
-        const dataUrl = await toPng(cardRef.current, {
+        const dataUrl = await toJpeg(cardRef.current, {
+          quality: 0.85, 
           width: 1200,
           height: 630,
           pixelRatio: 1,
@@ -88,7 +89,7 @@ export function OgSocialPreviewModal({
         });
 
         const blob = await (await fetch(dataUrl)).blob();
-        const file = new File([blob], `og-${aliasPerfil || 'preview'}.png`, { type: 'image/png' });
+        const file = new File([blob], `og-${aliasPerfil || 'preview'}.jpg`, { type: 'image/jpeg' });
 
         const uploadRes = await uploadFiles("ogImage", { files: [file] });
         const ogUrl = uploadRes[0]?.url;
