@@ -13,7 +13,8 @@ import {
   DIAS_SEMANA,
   DISPONIBILIDAD_OPCIONES,
 } from '@/data/education';
-import { OgPreviewCard } from './OgPreviewCard';
+import { OgSocialPreviewModal } from './OgSocialPreviewModal';
+import { getOgDeps } from '@/lib/og';
 
 const ToggleSwitch = memo(({ checked, onChange }: { checked: boolean; onChange: () => void }) => (
   <button
@@ -37,7 +38,7 @@ const ToggleSwitch = memo(({ checked, onChange }: { checked: boolean; onChange: 
 
 ToggleSwitch.displayName = 'ToggleSwitch';
 
-export const StepIdentity = memo(({ initialData, onFinish, onBack, onSaveOnly }: WizardStepProps) => {
+export const StepIdentity = memo(({ initialData, originalOgData, onFinish, onBack, onSaveOnly }: WizardStepProps) => {
   const { register, handleSubmit, watch, setValue } = useForm({
     defaultValues: {
       tituloHabilitante: initialData?.tituloHabilitante || '',
@@ -86,10 +87,18 @@ export const StepIdentity = memo(({ initialData, onFinish, onBack, onSaveOnly }:
     setShowPreviewModal(true);
   };
 
-  const handleConfirmFinish = () => {
+  const handleConfirmFinish = (ogUrl?: string) => {
     const formData = watch();
-    onFinish?.(formData as Partial<Record<string, unknown>> & { [key: string]: unknown });
+
+    if (ogUrl) {
+      onFinish?.({ ...formData, ogImageUrl: ogUrl } as Partial<Record<string, unknown>> & { [key: string]: unknown });
+    } else {
+      // If no new ogUrl (either generated or shouldn't capture), preserve original behavior
+      onFinish?.(formData as Partial<Record<string, unknown>> & { [key: string]: unknown });
+    }
   };
+
+  const shouldCaptureOG = originalOgData !== getOgDeps({ ...initialData, ...watch() });
 
   const toggleNivel = (id: string) => {
     const current = selectedNiveles || [];
@@ -505,58 +514,30 @@ export const StepIdentity = memo(({ initialData, onFinish, onBack, onSaveOnly }:
       </div>
     </form>
 
-    {showPreviewModal && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col">
-          <div className="p-6 border-b flex items-center justify-between shrink-0">
-            <div>
-              <h2 className="text-xl font-black text-dl-primary-dark">
-                Así se verá tu perfil
-              </h2>
-              <p className="text-sm text-dl-muted">
-                Vista previa de WhatsApp
-              </p>
-            </div>
-            <button
-              onClick={() => setShowPreviewModal(false)}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-500" />
-            </button>
-          </div>
-          
-          <div className="flex-1 overflow-auto p-6 flex items-start justify-center bg-gray-50">
-            <div className="transform scale-50 sm:scale-65 md:scale-75 lg:scale-85 origin-top">
-              <OgPreviewCard
-                name={`${initialData?.nombre || ''} ${initialData?.apellido || ''}`.trim() || 'Nombre del Docente'}
-                title={watch('tituloHabilitante') || 'Título Profesional'}
-                province={watch('provincia') || watch('localidades')?.[0] || ''}
-                image={initialData?.photoUrl}
-                isVerified={false}
-                especialidadDestacada={selectedMaterias?.[0] || undefined}
-                especialidadesPills={selectedMaterias || []}
-                aliasPerfil={initialData?.slug || undefined}
-              />
-            </div>
-          </div>
-
-          <div className="p-4 border-t flex items-center justify-between gap-4 shrink-0 bg-white">
-            <button
-              onClick={() => setShowPreviewModal(false)}
-              className="px-4 py-2 text-sm font-bold text-dl-muted hover:text-dl-primary-dark transition-colors"
-            >
-              ← Editar
-            </button>
-            <button
-              onClick={handleConfirmFinish}
-              className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold bg-dl-accent text-white rounded-lg shadow-lg hover:bg-dl-accent-dark transition-colors"
-            >
-              Confirmar y Publicar <CheckCircle2 className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
+    <OgSocialPreviewModal
+      isOpen={showPreviewModal}
+      onClose={() => setShowPreviewModal(false)}
+      name={`${initialData?.nombre || ''} ${initialData?.apellido || ''}`.trim() || 'Nombre del Docente'}
+      title={watch('tituloHabilitante') || 'Título Profesional'}
+      province={watch('provincia') || watch('localidades')?.[0] || ''}
+      image={initialData?.photoUrl}
+      isVerified={false}
+      especialidadDestacada={selectedMaterias?.[0] || undefined}
+      especialidadesPills={selectedMaterias || []}
+      aliasPerfil={initialData?.slug as string | undefined}
+      shouldCapture={shouldCaptureOG}
+      footerActionText="Confirmar y Publicar"
+      onFooterAction={handleConfirmFinish}
+      footerIcon={<CheckCircle2 className="w-4 h-4 ml-1" />}
+      footerLeftContent={
+        <button
+          onClick={() => setShowPreviewModal(false)}
+          className="px-2 sm:px-4 py-2 text-sm font-bold text-dl-muted hover:text-dl-primary-dark transition-colors"
+        >
+          ← Editar
+        </button>
+      }
+    />
     </>
   );
 });

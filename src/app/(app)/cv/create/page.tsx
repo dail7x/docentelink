@@ -15,6 +15,7 @@ import { saveResumeAction } from '@/app/actions/cv';
 import { getResumeAction } from '@/app/actions/get-cv';
 import { WIZARD_STEP_INDEXES } from '@/data/wizard';
 import type { ParsedCvData, WizardFormData } from '@/types/wizard';
+import { getOgDeps } from '@/lib/og';
 
 function LoadingState({ message }: { message: string }) {
   return (
@@ -46,6 +47,7 @@ function CreateCvContent() {
   const [currentStep, setCurrentStep] = useState<number>(WIZARD_STEP_INDEXES.UPLOAD);
   const [parsedData, setParsedData] = useState<ParsedCvData | null>(null);
   const [formData, setFormData] = useState<Partial<WizardFormData>>({});
+  const [originalOgData, setOriginalOgData] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(isEditMode);
 
@@ -56,6 +58,7 @@ function CreateCvContent() {
         const existingData = await getResumeAction();
         if (existingData) {
           setFormData(existingData);
+          setOriginalOgData(getOgDeps(existingData));
           setCurrentStep(WIZARD_STEP_INDEXES.PERSONAL);
         }
         setIsLoading(false);
@@ -214,6 +217,7 @@ function CreateCvContent() {
             />
             <StepIdentity
               initialData={formData}
+              originalOgData={originalOgData}
               onBack={handleGoBack}
               onFinish={handleFinish}
               onSaveOnly={handleSaveOnly}

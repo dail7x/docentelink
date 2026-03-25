@@ -68,6 +68,7 @@ export interface ParsedCvData {
 
 export interface WizardStepProps {
   initialData: Partial<WizardFormData>;
+  originalOgData?: string;
   onNext?: (data: Partial<WizardFormData>) => void;
   onFinish?: (data: Partial<WizardFormData>) => Promise<boolean>;
   onBack?: () => void;

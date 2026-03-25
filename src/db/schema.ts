@@ -24,6 +24,7 @@ export const resumes = sqliteTable('resumes', {
 
   // Datos del CV — JSON Resume estándar + meta.docente
   jsonResume:     text('json_resume', { mode: 'json' }).notNull().$type<JsonResume>(),
+  ogImageUrl:     text('og_image_url'),
 
   // Visibilidad
   isPublic:       integer('is_public',      { mode: 'boolean' }).default(false),

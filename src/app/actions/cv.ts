@@ -97,6 +97,7 @@ export async function saveResumeAction(formData: any) {
           jsonResume: jsonResume,
           completionScore: score,
           updatedAt: new Date(),
+          ogImageUrl: formData.ogImageUrl ?? undefined,
         })
         .where(eq(resumes.id, resumeId));
     } else {
@@ -109,6 +110,7 @@ export async function saveResumeAction(formData: any) {
         completionScore: score,
         isPublic: true,
         parsedFromPdf: formData.parsedFromPdf || false,
+        ogImageUrl: formData.ogImageUrl || null,
       });
     }
   } catch (dbError: any) {

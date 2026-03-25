@@ -15,6 +15,15 @@ export const ourFileRouter = {
       console.log("File URL:", file.url);
       return { uploadedBy: metadata.userId };
     }),
+  ogImage: f({ image: { maxFileSize: "2MB", maxFileCount: 1 } })
+    .middleware(async () => {
+      const user = await auth();
+      if (!user.userId) throw new Error("Unauthorized");
+      return { userId: user.userId };
+    })
+    .onUploadComplete(async ({ metadata, file }) => {
+      return { uploadedBy: metadata.userId, url: file.url };
+    }),
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;
