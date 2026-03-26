@@ -105,10 +105,7 @@ export const StepPersonal = ({ initialData, onNext, onSaveOnly }: WizardStepProp
   const onSubmit = (data: any) => {
     if (slugStatus === 'taken' || slugStatus === 'checking') return;
     if (!onNext) return;
-    onNext({
-      ...data,
-      nombre: `${data.nombre} ${data.apellido}`.trim()
-    });
+    onNext(data);
   };
 
   const handlePhotoProcessed = async (file: File) => {

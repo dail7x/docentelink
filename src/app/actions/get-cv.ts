@@ -19,8 +19,20 @@ export async function getResumeAction() {
   const meta = jr.meta?.docente || {};
   const basics = jr.basics || {};
 
+  const splitName = (fullName: string) => {
+    if (!fullName) return { nombre: "", apellido: "" };
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length === 1) return { nombre: parts[0], apellido: "" };
+    const apellido = parts.pop() || "";
+    const nombre = parts.join(" ");
+    return { nombre, apellido };
+  };
+
+  const nameData = splitName(basics.name || '');
+
   return {
-    nombre: basics.name || "",
+    nombre: meta.nombre || nameData.nombre || basics.name || "",
+    apellido: meta.apellido || nameData.apellido || "",
     email: basics.email || "",
     telefono: basics.phone || "",
     mostrarTelPublico: meta.mostrarTelPublico ?? false, // Recuperamos flag
@@ -42,6 +54,7 @@ export async function getResumeAction() {
     experiencia: jr.work || [],
     formacion: jr.education || [],
     photoUrl: basics.image || "",
+    ogImageUrl: resume.ogImageUrl || "",
     cursos: meta.cursos || [],
   };
 }

@@ -62,6 +62,8 @@ export async function saveResumeAction(formData: any) {
     education: formData.formacion || [],
     meta: {
       docente: {
+        nombre: formData.nombre,
+        apellido: formData.apellido,
         tituloHabilitante: formData.tituloHabilitante,
         nivelEducativo: formData.nivelEducativo || [],
         materias: formData.materias || [],

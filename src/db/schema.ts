@@ -103,6 +103,8 @@ export interface JsonResume {
 }
 
 export interface DocenteMeta {
+  nombre?:           string;
+  apellido?:         string;
   tituloHabilitante?: string;
   nivelEducativo:    Array<'inicial' | 'primaria' | 'secundaria' | 'terciaria' | 'universitaria' | 'adultos'>;
   materias:          string[];
