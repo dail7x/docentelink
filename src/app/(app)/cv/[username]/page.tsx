@@ -169,18 +169,15 @@ export default async function PublicCVPage({ params }: { params: Promise<{ usern
         }
       `}} />
       
-      {isOwner && (
-        <div className="fixed left-4 top-24 z-40 w-64">
+      <div className="max-w-[820px] mx-auto space-y-4">
+        {isOwner && (
           <ThemeSelector
             resumeId={resume.id}
             initialTheme={themeId}
             initialPhotoShape={photoShapeId}
             initialPhotoBorder={photoBorderEnabled}
           />
-        </div>
-      )}
-
-      <div className="max-w-[820px] mx-auto space-y-4">
+        )}
         
         {!isActuallyPublic && isOwner && (
           <div className="mb-4 bg-amber-100 text-amber-800 text-xs font-bold uppercase tracking-widest text-center py-3 px-4 rounded-xl border border-amber-200 shadow-sm animate-pulse">
