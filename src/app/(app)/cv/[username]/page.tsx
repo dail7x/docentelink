@@ -12,7 +12,8 @@ import {
   User as UserIcon,
   MapPin,
   Quote,
-  EyeOff
+  EyeOff,
+  Share2
 } from 'lucide-react';
 import Image from 'next/image';
 import { syncClerkUserWithDb } from '@/lib/user';
@@ -55,12 +56,17 @@ export async function generateMetadata({
       openGraph: {
         title: `${name} — ${titulo}`,
         description: `Perfil profesional de ${name}, ${titulo}${provincia ? ` en ${provincia}` : ''}.`,
+        url: `${baseUrl}/cv/${username}`,
+        siteName: 'DocenteLink',
         images: [{ 
           url: ogImage,
+          secureUrl: ogImage,
           width: 1200,
           height: 630,
-          alt: `${name} — ${titulo}` 
+          alt: `${name} — ${titulo}`,
+          type: 'image/jpeg',
         }],
+        locale: 'es_AR',
         type: 'profile',
       },
       twitter: {
@@ -249,9 +255,17 @@ export default async function PublicCVPage({ params }: { params: Promise<{ usern
             )}
             {mostrarTelPublico && telefono && (
               <a href={`https://wa.me/${telefono.replace(/\+/g, '').replace(/\s/g, '')}`} target="_blank" className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-black transition-all" style={{ backgroundColor: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' }}>
-                <Phone className="w-3.5 h-3.5" /> WhatsApp
+                <Phone className="w-3.5 h-3.5" /> Contactar
               </a>
             )}
+            {/* Share profile button */}
+            <a 
+              href={`https://wa.me/?text=${encodeURIComponent(`¡Hola! Te comparto mi perfil profesional docente en DocenteLink: https://docentelink.ar/cv/${username}`)}`}
+              target="_blank"
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-black transition-all bg-[#25D366] text-white hover:bg-[#128C7E] shadow-sm"
+            >
+              <Share2 className="w-3.5 h-3.5" /> Compartir
+            </a>
           </div>
           <div className="hidden print:block px-10 pb-6 text-xs font-bold space-y-1" style={{ color: 'var(--dl-muted)' }}>
             {email && <p>Email: {email}</p>}
