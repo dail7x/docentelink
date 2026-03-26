@@ -7,6 +7,9 @@ import { eq, or } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { v4 as uuidv4 } from 'uuid';
 import { syncClerkUserWithDb } from "@/lib/user";
+import { UTApi } from "uploadthing/server";
+
+const utapi = new UTApi();
 
 export async function saveResumeAction(formData: any) {
   const session = await auth();
@@ -89,6 +92,23 @@ export async function saveResumeAction(formData: any) {
   };
 
   const resumeId = userResume?.id || uuidv4();
+
+  // Cleanup old profile image if it changed or was removed
+  if (userResume) {
+    const oldJr = (userResume.jsonResume as any) || {};
+    const oldImageUrl = oldJr.basics?.image;
+
+    if (oldImageUrl && oldImageUrl !== formData.photoUrl && oldImageUrl.includes("utfs.io")) {
+      try {
+        const fileKey = oldImageUrl.split('/').pop();
+        if (fileKey) {
+          await utapi.deleteFiles(fileKey);
+        }
+      } catch (err) {
+        console.error("Error deleting old profile image:", err);
+      }
+    }
+  }
 
   try {
     if (userResume) {
