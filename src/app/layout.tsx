@@ -12,6 +12,18 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "DocenteLink — La carrera docente tiene un lugar propio",
   description: "Crea tu perfil profesional docente, importa tu CV con IA y compartí tu link único.",
+  openGraph: {
+    title: "DocenteLink — La carrera docente tiene un lugar propio",
+    description: "Crea tu perfil profesional docente, importa tu CV con IA y compartí tu link único.",
+    images: ["/example-og.jpg"],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DocenteLink — La carrera docente tiene un lugar propio",
+    description: "Crea tu perfil profesional docente, importa tu CV con IA y compartí tu link único.",
+    images: ["/example-og.jpg"],
+  },
 };
 
 export default function RootLayout({
