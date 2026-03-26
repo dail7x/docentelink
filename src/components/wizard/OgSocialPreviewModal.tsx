@@ -163,11 +163,11 @@ export function OgSocialPreviewModal({
         <div className="flex-1 overflow-y-auto w-full bg-gray-50/30">
           <div className="p-4 sm:p-5 flex flex-col items-center gap-4">
             {/* Link con botón copiar */}
-            <div className="flex items-center gap-2 w-full max-w-[450px]">
-              <div className="flex-1 flex items-center gap-1.5 bg-white rounded-lg px-3 py-2 border border-gray-200">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full max-w-[450px]">
+              <div className="flex-1 flex items-center gap-1.5 bg-white rounded-xl px-3 py-2.5 border border-gray-200 min-w-0">
                 <div className="w-1.5 h-1.5 rounded-full bg-[#1d9e75] shrink-0" />
-                <span className="text-xs text-[#4a4a5c] shrink-0">Tu link:</span>
-                <code className="font-mono text-xs text-[#534ab7] font-semibold truncate bg-transparent border-0 p-0 m-0">
+                <span className="text-[10px] font-bold uppercase tracking-tight text-[#4a4a5c] shrink-0">Tu link:</span>
+                <code className="font-mono text-[11px] text-[#534ab7] font-semibold truncate bg-transparent border-0 p-0 m-0">
                   {profileUrl}
                 </code>
               </div>
@@ -175,7 +175,7 @@ export function OgSocialPreviewModal({
                 variant="outline"
                 size="sm"
                 onClick={handleCopy}
-                className="shrink-0 h-9 px-3 text-xs"
+                className="shrink-0 h-10 px-4 text-xs font-bold rounded-xl border-2 hover:bg-[#534ab7]/5 active:scale-95 transition-all"
               >
                 {copied ? (
                   <>
@@ -208,10 +208,23 @@ export function OgSocialPreviewModal({
 
               {/* Área del preview - fondo tipo chat/preview */}
               <div className="bg-[#f0f2f5] p-3 flex flex-col items-center">
-                {/* Contenedor del OG Card - escala ajustada para ocupar menos altura */}
-                {/* 1200x630 -> scale 0.35 = 420x220.5 */}
-                <div className="w-full max-w-[420px] mx-auto bg-white rounded-t-lg overflow-hidden shadow-sm border border-gray-200 border-b-0 h-[220.5px]">
-                  <div className="transform scale-[0.35] origin-top-left" style={{ width: '1200px', height: '630px' }}>
+                {/* Contenedor del OG Card - escala adaptativa para móviles */}
+                <div className="w-full max-w-full sm:max-w-[420px] mx-auto bg-white rounded-t-lg overflow-hidden shadow-sm border border-gray-200 border-b-0 aspect-[1200/630] sm:h-[220.5px] relative">
+                  <div 
+                    className="absolute top-0 left-0 transform origin-top-left" 
+                    style={{ 
+                      width: '1200px', 
+                      height: '630px',
+                      transform: 'scale(var(--og-card-scale, 0.25))'
+                    }}
+                  >
+                    {/* Variable CSS para escala responsiva */}
+                    <style dangerouslySetInnerHTML={{ __html: `
+                      :root { --og-card-scale: 0.23; }
+                      @media (min-width: 380px) { :root { --og-card-scale: 0.28; } }
+                      @media (min-width: 440px) { :root { --og-card-scale: 0.32; } }
+                      @media (min-width: 640px) { :root { --og-card-scale: 0.35; } }
+                    `}} />
                     <div ref={cardRef} style={{ width: '1200px', height: '630px' }}>
                       <OgPreviewCard
                         name={name}
@@ -228,7 +241,7 @@ export function OgSocialPreviewModal({
                 </div>
 
                 {/* Metadatos OG Preview - como aparece en WhatsApp */}
-                <div className="w-full max-w-[420px] mx-auto bg-white rounded-b-lg p-2.5 shadow-sm border border-gray-200 border-l-4 border-l-[#534ab7]">
+                <div className="w-full max-w-full sm:max-w-[420px] mx-auto bg-white rounded-b-lg p-2.5 shadow-sm border border-gray-200 border-l-4 border-l-[#534ab7]">
                   {/* Título OG */}
                   <p className="text-xs font-semibold text-[#1a1a2e] line-clamp-1 leading-snug">
                     {name || 'Docente'} | {title || 'Perfil Profesional'} | Perfil en DocenteLink
