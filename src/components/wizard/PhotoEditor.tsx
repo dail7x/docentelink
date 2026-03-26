@@ -62,22 +62,28 @@ export const PhotoEditor = ({ onPhotoProcessed, initialImageUrl, extractedPhotoB
   const processImage = async (file: File) => {
     try {
       setIsProcessing(true);
-      setOriginalFile(file);
       
-      // Lazy load the heavy library only when needed
+      // Phase 1: Create an optimized version of the original image (keeping background)
+      // This ensures that "Restore Original" also saves space.
+      const optimizedOriginalBlob = await resizeAndConvertToWebP(file);
+      const optimizedOriginalFile = new File([optimizedOriginalBlob], 'original.webp', { type: 'image/webp' });
+      setOriginalFile(optimizedOriginalFile);
+      
+      // Phase 2: Lazy load the heavy library and remove background
+      // We use the raw file for processing to give the AI maximum detail
       const resultBlob = await removeBackgroundLazy(file, {
         progress: (status: string, progress: number) => {
            console.log("Background removal progress:", status, progress);
         }
       });
 
-      // Resize and convert to WebP for optimization
-      const optimizedBlob = await resizeAndConvertToWebP(resultBlob);
+      // Phase 3: Resize and convert the cropped result to WebP
+      const optimizedCroppedBlob = await resizeAndConvertToWebP(resultBlob);
 
-      const processedUrl = URL.createObjectURL(optimizedBlob);
+      const processedUrl = URL.createObjectURL(optimizedCroppedBlob);
       setPhoto(processedUrl);
       
-      const processedFile = new File([optimizedBlob], 'avatar.webp', { type: 'image/webp' });
+      const processedFile = new File([optimizedCroppedBlob], 'avatar.webp', { type: 'image/webp' });
       onPhotoProcessed(processedFile);
       
       setIsProcessed(true);
