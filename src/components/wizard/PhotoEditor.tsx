@@ -17,33 +17,84 @@ interface PhotoEditorProps {
 
 export const PhotoEditor = ({ onPhotoProcessed, initialImageUrl, extractedPhotoBlob }: PhotoEditorProps) => {
   const [photo, setPhoto] = useState<string | null>(initialImageUrl || null);
+  const [originalFile, setOriginalFile] = useState<File | null>(null);
+  const [isProcessed, setIsProcessed] = useState(false);
   const [extractedPreview, setExtractedPreview] = useState<string | null>(() => extractedPhotoBlob ? URL.createObjectURL(extractedPhotoBlob) : null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const resizeAndConvertToWebP = async (blob: Blob, maxWidth = 600, maxHeight = 600): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height *= maxWidth / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width *= maxHeight / height;
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob((result) => {
+          if (result) resolve(result);
+          else reject(new Error('Canvas toBlob failed'));
+        }, 'image/webp', 0.8);
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(blob);
+    });
+  };
+
   const processImage = async (file: File) => {
     try {
       setIsProcessing(true);
+      setOriginalFile(file);
       
       // Lazy load the heavy library only when needed
-      const blob = await removeBackgroundLazy(file, {
+      const resultBlob = await removeBackgroundLazy(file, {
         progress: (status: string, progress: number) => {
            console.log("Background removal progress:", status, progress);
         }
       });
 
-      const processedUrl = URL.createObjectURL(blob);
+      // Resize and convert to WebP for optimization
+      const optimizedBlob = await resizeAndConvertToWebP(resultBlob);
+
+      const processedUrl = URL.createObjectURL(optimizedBlob);
       setPhoto(processedUrl);
       
-      const processedFile = new File([blob], 'avatar.png', { type: 'image/png' });
+      const processedFile = new File([optimizedBlob], 'avatar.webp', { type: 'image/webp' });
       onPhotoProcessed(processedFile);
       
+      setIsProcessed(true);
       setIsDone(true);
     } catch (error) {
       console.error("Error al procesar la foto:", error);
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleRestoreOriginal = () => {
+    if (originalFile) {
+      const originalUrl = URL.createObjectURL(originalFile);
+      setPhoto(originalUrl);
+      onPhotoProcessed(originalFile);
+      setIsProcessed(false);
     }
   };
 
@@ -114,31 +165,45 @@ export const PhotoEditor = ({ onPhotoProcessed, initialImageUrl, extractedPhotoB
          </div>
       </div>
 
-      <div className="flex flex-col items-center gap-2">
-         <input 
-           type="file" 
-           ref={fileInputRef} 
-           className="hidden" 
-           accept="image/*" 
-           onChange={handleFile}
-         />
-         <Button 
-            type="button"
-            variant="outline" 
-            size="sm" 
-            className="font-black rounded-full px-6 relative z-10"
-            onClick={handleButtonClick}
-            disabled={isProcessing}
-         >
-            {photo ? (
-              <span className="flex items-center gap-2">
-                 <RefreshCw className="w-3 h-3" />
-                 Cambiar mi foto
-              </span>
-            ) : (
-              "Elegir mi foto de perfil"
+         <div className="flex flex-col items-center gap-3">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            className="hidden" 
+            accept="image/*" 
+            onChange={handleFile}
+          />
+          <div className="flex gap-2">
+            <Button 
+               type="button"
+               variant="outline" 
+               size="sm" 
+               className="font-black rounded-full px-6 relative z-10"
+               onClick={handleButtonClick}
+               disabled={isProcessing}
+            >
+               {photo ? (
+                 <span className="flex items-center gap-2">
+                    <RefreshCw className="w-3 h-3" />
+                    Cambiar mi foto
+                 </span>
+               ) : (
+                 "Elegir mi foto de perfil"
+               )}
+            </Button>
+            
+            {isProcessed && photo && !isProcessing && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-[10px] font-bold text-dl-muted hover:text-dl-primary-dark underline decoration-dotted"
+                onClick={handleRestoreOriginal}
+              >
+                Volver al original
+              </Button>
             )}
-         </Button>
+          </div>
           <p className="text-[10px] text-dl-muted font-bold uppercase tracking-widest italic opacity-70">
             Automáticamente aplicaremos el estilo editorial.
           </p>
