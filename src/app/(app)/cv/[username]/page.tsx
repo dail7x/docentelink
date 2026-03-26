@@ -45,20 +45,29 @@ export async function generateMetadata({
     const titulo = jsonResume?.meta?.docente?.tituloHabilitante || 'Docente Profesional';
     const provincia = jsonResume?.meta?.docente?.provincia || '';
 
+    // Use the captured static image from UploadThing if present
+    // Fallback to dynamic if not (though static is preferred)
+    const ogImage = resume.ogImageUrl || `${baseUrl}/api/og/${username}`;
+
     return {
       title: `${name} — ${titulo} | DocenteLink`,
       description: `Perfil profesional de ${name}, ${titulo}${provincia ? ` en ${provincia}` : ''}. Conectá con docentes calificados en DocenteLink.`,
       openGraph: {
         title: `${name} — ${titulo}`,
         description: `Perfil profesional de ${name}, ${titulo}${provincia ? ` en ${provincia}` : ''}.`,
-        images: [`${baseUrl}/api/og/${username}`],
+        images: [{ 
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: `${name} — ${titulo}` 
+        }],
         type: 'profile',
       },
       twitter: {
         card: 'summary_large_image',
         title: `${name} — ${titulo}`,
         description: `Perfil profesional de ${name}`,
-        images: [`${baseUrl}/api/og/${username}`],
+        images: [ogImage],
       },
     };
   } catch (error) {
